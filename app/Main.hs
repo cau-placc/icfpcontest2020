@@ -57,8 +57,8 @@ stringDemodulate input = if all (\c -> c == '0' || c == '1') input then
 demodulateData :: [Bool] -> Data
 demodulateData dat = let (res ,_) = inner dat in res
   where
-    inner (False, False, rem) = (Nil, rem)
-    inner (True, True, rem)   = let
+    inner (False: False: rem) = (Nil, rem)
+    inner (True: True: rem)   = let
                                     (l, rem1) = inner rem
                                     (r, rem2) = inner rem1
                                 in
