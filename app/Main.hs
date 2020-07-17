@@ -4,10 +4,10 @@ import Data.ByteString.Lazy.UTF8 as BLU
 import Control.Exception
 
 main = catch (
-    do  
+    do
         args <- getArgs
         putStrLn ("ServerUrl: " ++ args!!0 ++ "; PlayerKey: " ++ args!!1)
-        request' <- parseRequest ("POST " ++ (args!!0))
+        request' <- parseRequest ("POST " ++ show 42)
         let request = setRequestBodyLBS (BLU.fromString (args!!1)) request'
         response <- httpLBS request
         let statuscode = show (getResponseStatusCode response)
