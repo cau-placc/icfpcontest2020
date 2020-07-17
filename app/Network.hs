@@ -1,3 +1,4 @@
+module Network 
 
 request :: String -> String -> IO ()
 request url endpoint body = do
