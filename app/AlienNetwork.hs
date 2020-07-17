@@ -8,7 +8,7 @@ type ResponseBody = String
 
 printRequestResult :: Either StatusCode ResponseBody -> IO ()
 printRequestResult requestResult = do
-  case resultResult of
+  case requestResult of
       Right body      -> putStrLn ("Server response: " ++ body)
       Left statuscode -> putStrLn ("Unexpected server response:\nHTTP code: " ++ statuscode)
 
