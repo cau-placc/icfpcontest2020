@@ -9,7 +9,7 @@ main = catch (
         args <- getArgs
         putStrLn ("ServerUrl: " ++ args!!0 ++ "; PlayerKey: " ++ args!!1)
         putStrLn (concat args)
-        request (args!!0) (args!!1)
+        request (args!!0 ++ "/logs") (args!!1)
     ) handler
     where
         handler :: SomeException -> IO ()
@@ -17,7 +17,7 @@ main = catch (
 
 request :: String -> String -> IO ()
 request url body = do
-  request' <- parseRequest ("POST " ++ url)
+  request' <- parseRequest ("GET " ++ url)
   let request = setRequestBodyLBS (BLU.fromString body) request'
   response <- httpLBS request
   let statuscode = show (getResponseStatusCode response)
