@@ -43,9 +43,9 @@ executables:
     # dependencies:
     # - icfpc-mmxx-starterkit-haskell
 
-tests:
-  test:
-    main: Test.hs
-    source-dirs:
-      - app
-      - test
+#tests:
+#  test:
+#    main: Test.hs
+#    source-dirs:
+#      - app
+#      - test
