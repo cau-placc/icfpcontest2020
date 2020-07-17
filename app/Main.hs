@@ -26,7 +26,7 @@ modulateToString dat = map (\b -> if b then '1' else '0') modulateData dat
 
 modulateData :: Data -> [Bool]
 modulateData Nil        = [False, False]
-modulateData (Pair h t) = True : True : encodeData h ++ encodeData t
+modulateData (Pair h t) = True : True : modulateData h ++ modulateData t
 modulateData (Int i)    = modulate i
 
 modulate :: Integer -> [Bool]
