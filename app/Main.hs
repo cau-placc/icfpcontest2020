@@ -13,9 +13,8 @@ main = do
   putStrLn ("ServerUrl: " ++ head args ++ "; PlayerKey: " ++ args !! 1)
   (printRequestResult =<< post (head args) "" (args!!1)) `catch` handler
   let codedId = modulateToString (Int $ read $ args!!1)
-  putStrLn ("CodedId" ++ codedId)
-  (printRequestResult =<< post (head args) "" codedId) `catch` handler
-  (printRequestResult =<< alienSend (head args) (args !! 1)) `catch` handler
+  putStrLn ("CodedId " ++ codedId)
+  (printRequestResult =<< alienSend (head args) codedId) `catch` handler
   (printRequestResult =<< alienSend (head args) ("[0]")) `catch` handler
     where
         handler :: SomeException -> IO ()
