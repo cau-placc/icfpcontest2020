@@ -11,12 +11,9 @@ main :: IO ()
 main = do
   args <- getArgs
   putStrLn ("ServerUrl: " ++ head args ++ "; PlayerKey: " ++ args !! 1)
-  r1 <- post (head args) "" (args !! 1) `catch` handler
-  printRequestResult r1
-  r2 <- alienSend (head args) (args !! 1) `catch` handler
-  printRequestResult r2
-  r3 <- alienSend (head args) ("[0]") `catch` handler
-  printRequestResult r3
+  (printRequestResult =<< post (head args) "" (args !! 1)) `catch` handler
+  (printRequestResult =<< alienSend (head args) (args !! 1)) `catch` handler
+  (printRequestResult =<< alienSend (head args) ("[0]")) `catch` handler
     where
         handler :: SomeException -> IO ()
         handler ex = putStrLn $ "Request failed with:\n" ++ show ex
