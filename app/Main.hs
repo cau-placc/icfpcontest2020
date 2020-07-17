@@ -50,7 +50,7 @@ encodeWithLength n = go n []
 
 stringDemodulate :: String -> Maybe Data
 stringDemodulate input = if all (\c -> c == '0' || c == '1') input then
-    Just $ demodulate $ map (\c -> if c == '0' then False else True) input
+    Just $ demodulateData $ map (\c -> if c == '0' then False else True) input
   else
     Nothing
 
