@@ -1,3 +1,5 @@
 .stack-work
 .vscode
 Dockerfile
+icfpc-mmxx-starterkit-haskell.cabal
+stack.yaml.lock
