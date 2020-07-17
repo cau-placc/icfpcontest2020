@@ -63,7 +63,7 @@ demodulateData dat = let (res ,_) = inner dat in res
                                     (r, rem2) = inner rem1
                                 in
                                   (Pair l r, rem2)
-    inner number = let
+    inner number =
         let
             i = demodulate number
             rem = drop (length $ modulate i) number
