@@ -41,8 +41,8 @@ send server endpoint method body = do
     response <- httpLBS request
     let statuscode = show (getResponseStatusCode response)
     case statuscode of
-      "200" -> Right $ BLU.toString (getResponseBody response)
-      _     -> Left statuscode
+      "200" -> return $ Right $ BLU.toString (getResponseBody response)
+      _     -> return $ Left statuscode
 
 
 
