@@ -36,7 +36,7 @@ get s e b = send s e "GET" b
 
 send :: String -> String -> String -> String -> IO (Either StatusCode ResponseBody)
 send server endpoint method body = do
-    request' <- parseRequest (method ++ " " ++ url ++ endpoint)
+    request' <- parseRequest (method ++ " " ++ server ++ endpoint)
     let request = setRequestBodyLBS (BLU.fromString body) request'
     response <- httpLBS request
     let statuscode = show (getResponseStatusCode response)
