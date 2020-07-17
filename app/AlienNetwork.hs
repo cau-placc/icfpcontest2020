@@ -8,7 +8,7 @@ type ResponseBody = String
 
 printRequestResult :: Either StatusCode ResponseBody -> IO ()
 printRequestResult requestResult = do
-  case resultResult of
+  case requestResult of
       Right body      -> putStrLn ("Server response: " ++ body)
       Left statuscode -> putStrLn ("Unexpected server response:\nHTTP code: " ++ statuscode)
 
@@ -17,7 +17,7 @@ printRequestResult requestResult = do
 --------------------------------------------------------------------------------
 
 alienSend :: String -> String -> IO (Either StatusCode String)
-alienSend server body = request server "/aliens/send" body
+alienSend server body = post server "/aliens/send" body
 
 alienReceive :: String -> String -> IO (Either StatusCode String)
 alienReceive server responseId = get server ("/aliens/" ++ responseId) ""
@@ -36,13 +36,13 @@ get s e b = send s e "GET" b
 
 send :: String -> String -> String -> String -> IO (Either StatusCode ResponseBody)
 send server endpoint method body = do
-    request' <- parseRequest (method ++ " " ++ url ++ endpoint)
+    request' <- parseRequest (method ++ " " ++ server ++ endpoint)
     let request = setRequestBodyLBS (BLU.fromString body) request'
     response <- httpLBS request
     let statuscode = show (getResponseStatusCode response)
     case statuscode of
-      "200" -> Right $ BLU.toString (getResponseBody response)
-      _     -> Left statuscode
+      "200" -> return $ Right $ BLU.toString (getResponseBody response)
+      _     -> return $ Left statuscode
 
 
 

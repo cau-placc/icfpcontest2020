@@ -11,16 +11,24 @@ main :: IO ()
 main = do
   args <- getArgs
   putStrLn ("ServerUrl: " ++ head args ++ "; PlayerKey: " ++ args !! 1)
-  r1 <- post (head args) "" (args !! 1) `catch` handler
-  printRequestResult r1
-  r2 <- alienSend (head args) (args !! 1) `catch` handler
-  printRequestResult r2
-  r3 <- alienSend (head args) ("[0]") `catch` handler
-  printRequestResult r3
+  (printRequestResult =<< post (head args) "" (args!!1)) `catch` handler
+  let codedId = modulateToString (Int $ read $ args!!1)
+  putStrLn ("CodedId " ++ codedId)
+  (printRequestResult =<< alienSend (head args) codedId) `catch` handler
+  (printRequestResult =<< alienSend (head args) ("[0]")) `catch` handler
     where
         handler :: SomeException -> IO ()
         handler ex = putStrLn $ "Request failed with:\n" ++ show ex
 
+data Data = Int Integer | Pair Data Data | Nil
+
+modulateToString :: Data -> String
+modulateToString dat = map (\b -> if b then '1' else '0') $ modulateData dat
+
+modulateData :: Data -> [Bool]
+modulateData Nil        = [False, False]
+modulateData (Pair h t) = True : True : modulateData h ++ modulateData t
+modulateData (Int i)    = modulate i
 
 modulate :: Integer -> [Bool]
 modulate n =
@@ -40,6 +48,29 @@ encodeWithLength n = go n []
     where
       go 0 r = r
       go k rs = go (div k 2) (odd k : rs)
+
+stringDemodulate :: String -> Maybe Data
+stringDemodulate input = if all (\c -> c == '0' || c == '1') input then
+    Just $ demodulateData $ map (\c -> if c == '0' then False else True) input
+  else
+    Nothing
+
+demodulateData :: [Bool] -> Data
+demodulateData dat = let (res ,_) = inner dat in res
+  where
+    inner (False: False: rem) = (Nil, rem)
+    inner (True: True: rem)   = let
+                                    (l, rem1) = inner rem
+                                    (r, rem2) = inner rem1
+                                in
+                                  (Pair l r, rem2)
+    inner number =
+        let
+            i = demodulate number
+            rem = drop (length $ modulate i) number
+        in
+            (Int i, rem)
+
 
 demodulate :: [Bool] -> Integer
 demodulate (s1 : s2 : bs) = sign s1 s2 * num
