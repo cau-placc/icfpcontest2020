@@ -11,13 +11,23 @@ main :: IO ()
 main = do
   args <- getArgs
   putStrLn ("ServerUrl: " ++ head args ++ "; PlayerKey: " ++ args !! 1)
-  (printRequestResult =<< post (head args) "" (args !! 1)) `catch` handler
+  let codedId = modulateToString (Int $ read $ args!!1)
+  (printRequestResult =<< post (head args) "" codedId) `catch` handler
   (printRequestResult =<< alienSend (head args) (args !! 1)) `catch` handler
   (printRequestResult =<< alienSend (head args) ("[0]")) `catch` handler
     where
         handler :: SomeException -> IO ()
         handler ex = putStrLn $ "Request failed with:\n" ++ show ex
 
+data Data = Int Integer | Pair Data Data | Nil
+
+modulateToString :: Data -> String
+modulateData dat = map (\b -> if b the '1' else '0') modulateData dat
+
+modulateData :: Data -> [Bool]
+modulateData Nil        = [False, False]
+modulateData (Pair h t) = True : True : encodeData h ++ encodeData t
+modulateData (Int i)    = modulate i
 
 modulate :: Integer -> [Bool]
 modulate n =
@@ -37,6 +47,29 @@ encodeWithLength n = go n []
     where
       go 0 r = r
       go k rs = go (div k 2) (odd k : rs)
+
+stringDemodulate :: String -> Maybe Data
+stringDemodulate input = if all (\c -> c == '0' || c == '1') input then
+    Just $ demodulate $ map (\c -> if c == '0' then False else True) input
+  else
+    Nothing
+
+demodulateData :: [Bool] -> Data
+demodulateData dat = let (res ,_) = inner dat in res
+  where
+    inner (False, False, rem) = (Nil, rem)
+    inner (True, True, rem)   = let
+                                    (l, rem1) = inner rem
+                                    (r, rem2) = inner rem1
+                                in
+                                  (Pair l r, rem2)
+    inner number = let
+        let
+            i = demodulate number
+            rem = drop (length $ modulate i) number
+        in
+            (Int i, rem)
+
 
 demodulate :: [Bool] -> Integer
 demodulate (s1 : s2 : bs) = sign s1 s2 * num
