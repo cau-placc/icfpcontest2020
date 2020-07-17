@@ -1,5 +1,7 @@
 module Network
 
+import Network.HTTP.Simple
+
 request :: String -> String -> String -> IO ()
 request url endpoint body = do
   request' <- parseRequest ("POST " ++ url ++ endpoint)
