@@ -1,8 +1,8 @@
-module Network 
+module Network
 
-request :: String -> String -> IO ()
+request :: String -> String -> String -> IO ()
 request url endpoint body = do
-  request' <- parseRequest ("POST " ++ url)
+  request' <- parseRequest ("POST " ++ url ++ endpoint)
   let request = setRequestBodyLBS (BLU.fromString body) request'
   response <- httpLBS request
   let statuscode = show (getResponseStatusCode response)
