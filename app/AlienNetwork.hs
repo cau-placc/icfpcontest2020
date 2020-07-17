@@ -3,14 +3,14 @@ module AlienNetwork where
 import Network.HTTP.Simple
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 
+type StatusCode = String
+type ResponseBody = String
+
 printRequestResult :: Either StatusCode ResponseBody -> IO ()
 printRequestResult requestResult = do
   case resultResult of
       Right body      -> putStrLn ("Server response: " ++ body)
       Left statuscode -> putStrLn ("Unexpected server response:\nHTTP code: " ++ statuscode)
-
-type StatusCode = String
-type ReponseBody = String
 
 --------------------------------------------------------------------------------
 --                              ENDPOINTS                                     --
