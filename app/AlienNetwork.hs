@@ -1,6 +1,7 @@
-module AlienNetwork where 
+module AlienNetwork where
 
 import Network.HTTP.Simple
+import qualified Data.ByteString.Lazy.UTF8 as BLU
 
 request :: String -> String -> String -> IO ()
 request url endpoint body = do
