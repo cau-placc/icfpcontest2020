@@ -3,16 +3,46 @@ module AlienNetwork where
 import Network.HTTP.Simple
 import qualified Data.ByteString.Lazy.UTF8 as BLU
 
-request :: String -> String -> String -> IO ()
-request url endpoint body = do
-  request' <- parseRequest ("POST " ++ url ++ endpoint)
-  let request = setRequestBodyLBS (BLU.fromString body) request'
-  response <- httpLBS request
-  let statuscode = show (getResponseStatusCode response)
-  case statuscode of
-    "200" -> putStrLn ("Server response: " ++ BLU.toString (getResponseBody response))
-    _     -> putStrLn ("Unexpected server response:\nHTTP code: " ++ statuscode)
+printRequestResult :: Either StatusCode ResponseBody -> IO ()
+printRequestResult requestResult = do
+  case resultResult of
+      Right body      -> putStrLn ("Server response: " ++ body)
+      Left statuscode -> putStrLn ("Unexpected server response:\nHTTP code: " ++ statuscode)
 
+type StatusCode = String
+type ReponseBody = String
 
-alienSend :: String -> String -> IO ()
+--------------------------------------------------------------------------------
+--                              ENDPOINTS                                     --
+--------------------------------------------------------------------------------
+
+alienSend :: String -> String -> IO (Either StatusCode String)
 alienSend server body = request server "/aliens/send" body
+
+alienReceive :: String -> String -> IO (Either StatusCode String)
+alienReceive server responseId = get server ("/aliens/" ++ responseId) ""
+
+-- TODO url encode key
+getLogs :: String -> String -> IO (Either StatusCode String)
+getLogs server key = get server ("/logs?logKey="++key) ""
+
+--------------------------------------------------------------------------------
+
+post :: String -> String -> String -> IO (Either StatusCode ResponseBody)
+post s e b = send s e "POST" b
+
+get :: String -> String -> String -> IO (Either StatusCode ResponseBody)
+get s e b = send s e "GET" b
+
+send :: String -> String -> String -> String -> IO (Either StatusCode ResponseBody)
+send server endpoint method body = do
+    request' <- parseRequest (method ++ " " ++ url ++ endpoint)
+    let request = setRequestBodyLBS (BLU.fromString body) request'
+    response <- httpLBS request
+    let statuscode = show (getResponseStatusCode response)
+    case statuscode of
+      "200" -> Right $ BLU.toString (getResponseBody response)
+      _     -> Left statuscode
+
+
+
