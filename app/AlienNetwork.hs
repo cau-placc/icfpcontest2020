@@ -1,4 +1,4 @@
-module AlienNetwork
+module AlienNetwork where 
 
 import Network.HTTP.Simple
 
