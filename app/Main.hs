@@ -22,7 +22,7 @@ main = do
 data Data = Int Integer | Pair Data Data | Nil
 
 modulateToString :: Data -> String
-modulateData dat = map (\b -> if b then '1' else '0') modulateData dat
+modulateToString dat = map (\b -> if b then '1' else '0') modulateData dat
 
 modulateData :: Data -> [Bool]
 modulateData Nil        = [False, False]
