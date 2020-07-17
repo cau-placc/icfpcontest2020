@@ -17,7 +17,7 @@ printRequestResult requestResult = do
 --------------------------------------------------------------------------------
 
 alienSend :: String -> String -> IO (Either StatusCode String)
-alienSend server body = request server "/aliens/send" body
+alienSend server body = post server "/aliens/send" body
 
 alienReceive :: String -> String -> IO (Either StatusCode String)
 alienReceive server responseId = get server ("/aliens/" ++ responseId) ""
