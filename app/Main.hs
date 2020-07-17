@@ -57,3 +57,18 @@ sign False True = 1
 testModulation :: [Bool]
 testModulation =
   map (\n -> n == demodulate (modulate n)) (concat [ [n, -n] | n <- [0..]])
+
+data AlienAST = Number Integer
+              | NumberModulated [Bool]
+              | Succ AlienAST
+              | Pred AlienAST
+              | Neg  AlienAST
+              | Sum  AlienAST AlienAST
+              | Prod AlienAST AlienAST
+              | Div  AlienAST AlienAST
+              | Eq   AlienAST AlienAST
+              | Lq   AlienAST
+              | Modulate   AlienAST
+              | Demodulate AlienAST
+              | Send       AlienAST
+              | List       [AlienAST]
