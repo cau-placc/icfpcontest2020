@@ -1,0 +1,75 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving, LambdaCase #-}
+
+module Interpreter where
+
+import           Control.Applicative
+import           Control.Monad.State
+import           Control.Monad.Error
+import qualified Data.Map                      as Map
+import           Data.Map                       ( Map )
+import           Data.Functor
+import           Text.Show.Functions
+
+import           Syntax
+import           Data.Functor.Identity          ( Identity
+                                                , runIdentity
+                                                )
+
+(.:) = (.) . (.)
+
+data Data = Partial (AlienExpr -> MIB Data) | Int Integer | Pair Data Data | Unit deriving (Show)
+
+type MIBEnv = Map AlienName AlienExpr
+
+newtype MIB a = MIB { unMIB :: StateT MIBEnv (ErrorT String Identity) a }
+  deriving (Functor, Applicative, Monad, MonadState MIBEnv, Alternative, MonadFail)
+
+runMIB :: MIB a -> Either String (a, MIBEnv)
+runMIB = runIdentity . runErrorT . flip runStateT Map.empty . unMIB -- TODO: use except
+
+loadProg :: AlienProg -> MIB ()
+loadProg (AlienProg decls) = mapM loadDecl decls $> ()
+
+loadDecl :: AlienDecl -> MIB ()
+loadDecl (Decl ident expr) = modify $ Map.insert ident expr
+
+runExpr :: AlienExpr -> MIB Data
+runExpr (App l r    ) = withPartial l ($ r)
+runExpr (Number i   ) = pure $ Int i
+runExpr (Ident  name) = runExpr =<< gets (\env -> env Map.! name)
+runExpr (Func   name) = funcAsData name
+runExpr Nil           = pure Unit
+runExpr Cons          = partial2 $ \x xs -> Pair <$> runExpr x <*> runExpr xs
+
+funcAsData :: AlienFunc -> MIB Data
+funcAsData Add = partial2
+  $ \l r -> (Int .: (+)) <$> (runExpr >=> asInt) l <*> (runExpr >=> asInt) r
+funcAsData Neg = partial1 $ \e -> Int . negate <$> (runExpr >=> asInt) e
+funcAsData Eq  = partial2 $ \l r -> do
+  l' <- (runExpr >=> asInt) l
+  r' <- (runExpr >=> asInt) r
+  partial2 $ \t f -> runExpr $ if l' == r' then t else f
+funcAsData K    = partial2 $ \x y -> runExpr x
+funcAsData S    = partial3 $ \x y z -> runExpr $ App (App x z) (App y z)
+funcAsData C    = partial3 $ \x y z -> runExpr $ App (App x z) y
+funcAsData B    = partial3 $ \x y z -> runExpr $ App x $ App y z
+funcAsData func = error $ show func
+
+partial1 = pure . Partial
+
+partial2 :: (AlienExpr -> AlienExpr -> MIB Data) -> MIB Data
+partial2 k = pure $ Partial $ \x -> pure $ Partial $ \y -> k x y
+
+partial3 :: (AlienExpr -> AlienExpr -> AlienExpr -> MIB Data) -> MIB Data
+partial3 k =
+  pure $ Partial $ \x -> pure $ Partial $ \y -> pure $ Partial $ \z -> k x y z
+
+withPartial :: AlienExpr -> ((AlienExpr -> MIB Data) -> MIB Data) -> MIB Data
+withPartial expr k = runExpr expr >>= \case
+  Partial f -> k f
+  _         -> fail "expected function"
+
+asInt :: Data -> MIB Integer
+asInt = \case
+  Int i -> pure i
+  _     -> fail "expected integer"

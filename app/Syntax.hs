@@ -1,8 +1,8 @@
 module Syntax where
 
-type AlienName = Integer
+data AlienName = FuncName Integer | Galaxy deriving (Show, Eq, Ord)
 
-data AlienDecl = Decl { declIdent :: Integer, declExpr :: AlienExpr } | Galaxy { declExpr :: AlienExpr }  deriving (Show)
+data AlienDecl = Decl { declIdent :: AlienName, declExpr :: AlienExpr } deriving (Show)
 
 newtype AlienProg = AlienProg { unAlienProg :: [AlienDecl] } deriving (Show)
 

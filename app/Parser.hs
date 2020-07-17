@@ -19,7 +19,7 @@ alienProg :: AlienParser AlienProg
 alienProg = AlienProg <$> some (decl <* many space) <* eof
 
 decl :: AlienParser AlienDecl
-decl = (Decl <$> name <|> Galaxy <$ string "galaxy") <*> (string " =" *> expr)
+decl = Decl <$> name  <*> (string " =" *> expr)
 
 expr :: AlienParser AlienExpr
 expr = char ' ' >> (number <|> app <|> nil <|> cons <|> ident <|> func)
@@ -34,7 +34,7 @@ app :: AlienParser AlienExpr
 app = try $ string "ap" >> App <$> expr <*> expr
 
 name :: AlienParser AlienName
-name = char ':' *> integer
+name = string "galaxy" $> Galaxy <|> (char ':' >> FuncName <$> integer)
 
 ident :: AlienParser AlienExpr
 ident = Ident <$> name

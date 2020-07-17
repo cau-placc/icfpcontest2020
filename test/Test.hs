@@ -1,8 +1,14 @@
-import Parser
+import           Parser
+import           Syntax
+import           Interpreter
 
 main :: IO ()
 main = do
   galaxy <- readFile "galaxy.txt"
-  let code = unlines $ lines galaxy
-  print $ parseAlienProg code
+  let
+    code       = unlines $ lines galaxy
+    Right prog = parseAlienProg code
+    Right (result, _) =
+      runMIB $ loadProg prog >> runExpr (Ident Galaxy)
+  print result
 

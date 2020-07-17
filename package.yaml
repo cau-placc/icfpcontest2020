@@ -24,6 +24,9 @@ dependencies:
 - http-conduit >= 2.3
 - utf8-string >= 1.0
 - parsec
+- mtl
+- transformers
+- containers
 
 # In a more realistic setting, you will probably want to write a library that
 # is declared here and use it as a dependency for your binary.
