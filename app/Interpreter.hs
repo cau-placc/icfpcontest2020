@@ -15,11 +15,11 @@ import           Data.Functor.Identity          ( Identity
                                                 , runIdentity
                                                 )
 
-import Debug.Trace
+
+import Modulation
+import Interpreter.Data
 
 (.:) = (.) . (.)
-
-data Data = Partial (AlienExpr -> MIB Data) | Int Integer | Pair AlienExpr AlienExpr | Unit | Pic [(Integer, Integer)] deriving (Show)
 
 showData :: Data -> MIB String
 showData = \case
@@ -32,10 +32,22 @@ showData = \case
   Pic l     -> pure $ "Pic(" <> show l <> ")"
   Partial _ -> pure $ "Partial"
 
-type MIBEnv = Map AlienName AlienExpr
+ modulateToString :: Data -> MIB String
+ modulateToString dat = mapM (\b -> if b then '1' else '0') =<< modulateData dat
 
-newtype MIB a = MIB { unMIB :: StateT MIBEnv (Except String) a }
-  deriving (Functor, Applicative, Monad, MonadState MIBEnv, Alternative, MonadError String)
+stringDemodulate :: String -> MIB Data
+stringDemodulate input = if all (\c -> c == '0' || c == '1') input
+  then runExpr $ demodulateData $ map (\c -> if c == '0' then False else True) input
+  else throwError $ "Demodulation Error: " <> input
+
+ modulateData :: Data -> MIB [Bool]
+ modulateData Unit       = pure $ [False, False]
+ modulateData (Pair h t) = do
+    h' <- runExpr h
+    t' <- runExpr t
+    (True : True :) <$> modulateData h' <*> modulateData t'
+ modulateData (Int i   ) = pure $ modulate i
+ modulateData e = throwError $ "expected Unit, Pair or Integer, got " ++ show e
 
 runMIB :: MIB a -> Either String a
 runMIB = runIdentity . runExceptT . flip evalStateT Map.empty . unMIB -- TODO: use except
@@ -109,6 +121,14 @@ funcAsData Modem        = modem
 funcAsData F38          = f38
 funcAsData MultipleDraw = multidraw
 funcAsData Draw         = draw
+funcAsData Dem          = partial1 $ \v ->
+  modu <- (runExpr v >=> asModulated) v
+  let dat = demodulateData modu
+  pure $ dat
+funcAsData Mod          = partial1 $ \v ->
+  dat <- runExpr v
+  let modu = modulateData dat
+  pure $ Modulated modu
 funcAsData func         = error $ show func
 
 alienInteract = partial3 $ \x2 x4 x3 ->  runExpr $
@@ -168,11 +188,14 @@ asPair = \case
   Pair x y -> (,) <$> runExpr x <*> runExpr y
   _        -> throwError "expected pair"
 
+asModulated :: Data -> MIB String
+asModulated = \case
+  Modulated m -> pure m
+  _           -> throwError "Expected Modulated Data"
+
 asList :: Data -> MIB [Data]
 asList = \case
   Unit     -> pure []
   Pair x y -> (:) <$> runExpr x <*> (asList =<< runExpr y)
   _        -> throwError "expected unit or pair"
 
-app :: AlienFunc -> [AlienExpr] -> AlienExpr
-app f = foldl App $ Func f
