@@ -15,6 +15,8 @@ import           Data.Functor.Identity          ( Identity
                                                 , runIdentity
                                                 )
 
+import Debug.Trace
+
 (.:) = (.) . (.)
 
 data Data = Partial (AlienExpr -> MIB Data) | Int Integer | Pair AlienExpr AlienExpr | Unit | Pic [(Integer, Integer)] deriving (Show)
@@ -143,7 +145,7 @@ withPartial expr k = runExpr expr >>= \case
   Partial f -> k f
   Unit      -> funcAsData T
   Pair l r  -> partial1 $ \x -> runExpr $ App (App x l) r
-  e         -> throwError $ "expected function, got " <> show e
+  e         -> throwError $ "expected function, got " <> show e <> "\nExpr: " <> show expr
 
 asInt :: Data -> MIB Integer
 asInt = \case
