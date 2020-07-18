@@ -59,6 +59,11 @@ funcAsData F    = ite False
 funcAsData Dec  = partial1 $ \e -> Int . (- 1) <$> (runExpr >=> asInt) e
 funcAsData Inc  = partial1 $ \e -> Int . (+ 1) <$> (runExpr >=> asInt) e
 funcAsData Pwr2 = partial1 $ \e -> Int . (2 **) <$> (runExpr >=> asInt) e
+funcAsData IsNil = partial1 $ \p -> do
+  d <- runExpr p
+  \case d of
+    Nil       -> True
+    Partial f -> f $ partial2 \_ _ -> pure $ F
 
 funcAsData Lt   = partial2 $ \l r -> do
   l' <- (runExpr >=> asInt) l
@@ -98,6 +103,7 @@ partial3 k =
 withPartial :: AlienExpr -> ((AlienExpr -> MIB Data) -> MIB Data) -> MIB Data
 withPartial expr k = runExpr expr >>= \case
   Partial f -> k f
+  Nil       -> funcAsData T
   _         -> throwError "expected function"
 
 asInt :: Data -> MIB Integer
