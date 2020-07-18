@@ -95,7 +95,7 @@ tryReduce Nil  (x:t)          = tryReduce T t
 tryReduce Neg  [x]            = Int . negate <$> (runExpr >=> asInt) x
 tryReduce Cons (x: y: z: t)   = continue z (x:y:t)
 tryReduce K (x:y:t)           = continue x t
-tryReduce S (x:y:z:t)         = continue x (y : App y x : t)
+tryReduce S (x:y:z:t)         = continue x (z : App y z : t)
 tryReduce C (x:y:z:t)         = continue x (z:y:t)
 tryReduce B (x:y:z:t)         = continue x (App y z:t)
 tryReduce I (x:t)             = continue x t
