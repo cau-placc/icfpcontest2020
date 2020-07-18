@@ -100,16 +100,16 @@ funcAsData MultipleDraw = multidraw
 funcAsData Draw         = draw
 funcAsData func         = error $ show func
 
-alienInteract = partial3 $ \prot state vec ->  runExpr $
-  app F38 [prot, App (App prot state) vec]
+alienInteract = partial3 $ \x2 x4 x3 ->  runExpr $
+  app F38 [x2, App (App x2 x4) x3]
 
-f38 = partial2 $ \prot state ->
+f38 = partial2 $ \x2 x0 ->
   runExpr $
-  app IF0 [ app Car [state]
-          , toExprList [app Modem [app Car [app Cdr [state]]], app MultipleDraw [app Car [app Cdr [app Cdr [state]]]]]
-          , app Interact [prot, app Modem [app Car [app Cdr [state]]], app Send [app Car [app Cdr [app Cdr [state]]]]]]
+  app IF0 [ app Car [x0]
+          , toExprList [app Modem [app Car [app Cdr [x0]]], app MultipleDraw [app Car [app Cdr [app Cdr [x0]]]]]
+          , app Interact [x2, app Modem [app Car [app Cdr [x0]]], app Send [app Car [app Cdr [app Cdr [x0]]]]]]
 
-modem = partial1 $ \x -> runExpr $ app Dem [app Mod [x]]
+modem = partial1 $ \x0 -> runExpr $ app Dem [app Mod [x0]]
 
 multidraw = partial1 $ \l ->
   runExpr $ app IsNil [l , Func Nil, app Cons [app Draw [app Car [l]], app MultipleDraw [app Cdr [l]]]]
