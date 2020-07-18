@@ -21,7 +21,7 @@ import Debug.Trace
 
 data Data = Partial (AlienExpr -> MIB Data) | Int Integer | Pair AlienExpr AlienExpr | Unit | Pic [(Integer, Integer)] deriving (Show)
 
-showData :: Data -> MIB Show
+showData :: Data -> MIB String
 showData = \case
   Int i     -> pure $ show i
   Pair l r  -> do
