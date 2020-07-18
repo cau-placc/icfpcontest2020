@@ -92,11 +92,11 @@ funcAsData Modem = modem
 funcAsData F38 = f38
 funcAsData func = error $ show func
 
-alienInteract = partial3 $ \prot state vec -> runExpr $ App (App F38 prot) (App (App prot state) vec)
+alienInteract = partial3 $ \prot state vec -> runExpr $ App (App (Func F38) prot) (App (App prot state) vec)
 f38 = partial2 $ \prot state -> runExpr $ App
-  (App (App IF0 (App Car state)) $ toExprList [App Modem (App Car (App Cdr state)), App Multidraw (App Car (App Cdr (App (Cdr state))))])
-  App (App (App Interact prot) (App Modem (App Car (App Cdr state)))) (App Send (App Car (App Cdr (App Cdr state))))
-modem = partial1 $ \x -> runExpr $ App Dem (App Mod) x
+  (App (App (Func IF0) (App Car state)) $ toExprList [App (Func Modem) (App (Func Car) (App (Func Cdr) state)), App (Func Multidraw) (App (Func Car) (App (Func Cdr) (App ((Func Cdr) state))))])
+  App (App (App (Func Interact) prot) (App (Func Modem) (App Car (App Cdr state)))) (App (Func Send) (App (Func Car) (App (Func Cdr) (App (Func Cdr) state))))
+modem = partial1 $ \x -> runExpr $ App (Func Dem) (App (Func Mod)) x
 
 toExprList :: [AlienExpr] -> AlienExpr
 toExprList [] = Nil
