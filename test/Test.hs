@@ -14,5 +14,5 @@ main = do
         (App (App (App (Func Interact) (Ident Galaxy)) (Func Nil))
              (App (App (Func Cons) (Number 0)) (Number 0))
         ) >>= showData
-  putStrLn $ "-----\nResult: " <> result
+  putStrLn $ "-----\nResult: " <> show result
 
