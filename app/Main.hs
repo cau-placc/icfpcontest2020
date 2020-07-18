@@ -26,7 +26,7 @@ join ::String ->  String -> IO (Either StatusCode ResponseBody)
 join server playerKey = let
       body = "(2, " <> playerKey <> ", " <> showAlienList [] <>  ")"
     in
-      post server "/aliens/send" body 
+      post server "/aliens/send" body
 
 
 
@@ -46,7 +46,7 @@ showAlienList [x] = "(" <> x <> ")"
 showAlienList (h:t) = let
     (_:t') = showAlienList t
   in
-    "(" <> h ", " <> t'
+    "(" <> h <> ", " <> t'
 
 command :: String -> String -> [Commands] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
