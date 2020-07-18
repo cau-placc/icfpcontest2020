@@ -94,9 +94,9 @@ funcAsData func = error $ show func
 
 alienInteract = partial3 $ \prot state vec -> runExpr $ App (App (Func F38) prot) (App (App prot state) vec)
 f38 = partial2 $ \prot state -> runExpr $ App
-  (App (App (Func IF0) (App Car state)) $ toExprList [App (Func Modem) (App (Func Car) (App (Func Cdr) state)), App (Func Multidraw) (App (Func Car) (App (Func Cdr) (App ((Func Cdr) state))))])
+  (App (App (Func IF0) (App (Func Car) state)) $ toExprList [App (Func Modem) (App (Func Car) (App (Func Cdr) state)), App (Func Multidraw) (App (Func Car) (App (Func Cdr) (App (Func Cdr) state)))])
   $ App (App (App (Func Interact) prot) (App (Func Modem) (App (Func Car) (App (Func Cdr) state)))) (App (Func Send) (App (Func Car) (App (Func Cdr) (App (Func Cdr) state))))
-modem = partial1 $ \x -> runExpr $ App (Func Dem) (App (Func Mod)) x
+modem = partial1 $ \x -> runExpr $ App (Func Dem) (App (Func Mod) x) 
 
 toExprList :: [AlienExpr] -> AlienExpr
 toExprList [] = Nil
