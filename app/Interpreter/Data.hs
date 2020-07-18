@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving, LambdaCase, TupleSections #-}
 module Interpreter.Data where
 
 import           Control.Applicative
