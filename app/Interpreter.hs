@@ -27,7 +27,7 @@ showData = \case
   Pic l     -> pure $ "Pic(" <> show l <> ")"
   Modulated s -> pure $  "Modulated(" <> show s <> ")"
   Part f p  -> do
-    case tryReduce p of
+    case tryReduce f p of
       Part f p    -> do
         l <- mapM showData p
         pure $ "ap " <> show f <> foldl (\a b -> a ++ ' ':b ) "" l
