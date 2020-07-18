@@ -114,7 +114,7 @@ tryReduce Div  [x, y] = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
   Int <$> pure $ x' `div` y'
-tryReduce Eq (x:y:t) do
+tryReduce Eq (x:y:t) = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
   tryReduce (if x == y then  T else F) t
