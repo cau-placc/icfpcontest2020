@@ -27,6 +27,7 @@ dependencies:
 - mtl
 - transformers
 - containers
+- JuicyPixels >= 3.3 && < 4
 
 # In a more realistic setting, you will probably want to write a library that
 # is declared here and use it as a dependency for your binary.
