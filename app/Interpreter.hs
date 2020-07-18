@@ -104,7 +104,7 @@ alienInteract = partial3 $ \prot state vec ->  runExpr $
 f38 = partial2 $ \prot state ->
   runExpr $
   app IF0 [ app Car [state]
-          , toExprList [app Modem [app Car [app Cdr [state]]], app MultipleDraw [app Car [app Cdr [app [Cdr state]]]]]
+          , toExprList [app Modem [app Car [app Cdr [state]]], app MultipleDraw [app Car [app Cdr [app Cdr [state]]]]]
           , app Interact [prot, app Modem [app Car [app Cdr [state]0]], app Send [app Car [app Cdr [app Cdr [state]]]]]]
 
 modem = partial1 $ \x -> runExpr $ app Dem [app Mod [x]]
