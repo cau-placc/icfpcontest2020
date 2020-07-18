@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 import           System.Environment
 import           Network.HTTP.Simple
 import qualified Data.ByteString.Lazy.UTF8     as BLU
@@ -18,10 +19,9 @@ main = catch (
         putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++show  playerKey)
 
         Right result <- join server playerKey
-        putStrLn $ "Join: " <> showDemodulated result
-
-        let response = valueToGameResponse $ demodulateValue result
-        combat server playerKey response
+        Just state <- demodulateResponse result
+        putStrLn $ "Join:    " <> show state
+        combat server playerKey state
 
     ) handler
     where
@@ -32,12 +32,14 @@ combat :: String -> Integer -> GameResponse -> IO ()
 combat _      _         (GameResponse Done    _       _ ) = putStrLn "Game Over!"
 combat server playerKey (GameResponse Waiting unknown state) = do
     Right result <- start server playerKey (1,2,3,4)
-    putStrLn $ "Start: " <> showDemodulated result
-    combat server playerKey $ valueToGameResponse $ demodulateValue result
+    Just state <- demodulateResponse result
+    putStrLn $ "Start:   " <> show state
+    combat server playerKey state
 combat server playerKey (GameResponse Running unkown state) = do
     Right result <- doNothing server playerKey
-    putStrLn $ "Nothing: " <> showDemodulated result
-    combat server playerKey $ valueToGameResponse $ demodulateValue result
+    Just state <- demodulateResponse result
+    putStrLn $ "Nothing: " <> show state
+    combat server playerKey state
 
 join ::String ->  Integer -> IO (Either StatusCode ResponseBody)
 join server playerKey = let
@@ -49,29 +51,65 @@ showDemodulated :: String -> String
 showDemodulated = show . demodulateValue
 
 type ShipConfiguration = (Integer,Integer,Integer,Integer)
-
 type Commands = Value
 
-data Status = Waiting |  Running | Done
-data GameResponse = GameResponse Status Unknown (Maybe GameState)
+data Status = Waiting |  Running | Done deriving Show
+data GameResponse = GameResponse Status Unknown (Maybe GameState) deriving Show
+data Role = Attack | Defence deriving Show
+data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) Maybe (Integer, Integer, Integer , Integer) deriving Show
 
-type GameState = Value
-type Unknown = Value
 
-valueToGameResponse :: Value -> GameResponse
-valueToGameResponse  (Pair (Num 1) (Pair status (Pair unknown (Pair gameState Nil))) ) = GameResponse (valueToStatus status) (valueToUnknown unknown) (valueToGameState gameState)
+type GameState = [Value]
 
-valueToStatus :: Value -> Status
-valueToStatus (Num 0) = Waiting
-valueToStatus (Num 1) = Running
-valueToStatus (Num 2) = Done
+demodulateResponse :: String -> Maybe GameResponse
+demodulateResponse  :: fromValue . demodulateValue
 
-valueToUnknown :: Value -> Unknown
-valueToUnknown = id
+class FromValue a where
+  fromValue :: Value -> Maybe a
 
-valueToGameState :: Value -> Maybe GameState
-valueToGameState Nil = Nothing
-valueToGameState e   = Just e
+instance FromValue GameResponse where
+  fromValue (Pair (Num 1) (Pair status (Pair unknown (Pair gameState Nil))) ) = do
+      GameResponse <$> fromValue status <*> fromValue unknown <*> fromValue gameState
+  fromValue _ = Nothing
+
+instance FromValue Status where
+  fromValue (Num 0) = pure Waiting
+  fromValue (Num 1) = pure Running
+  fromValue (Num 2) = pure Done
+  fromValue _       = Nothing
+
+instance FromValue Role where
+  fromValue (Num 0) = pure Attack
+  fromValue (Num 1) = pure Defence
+  fromValue _       = Nothing
+
+instance FromValue Unknown where
+  fromValue values | Just [u1, position, u3, u4, u5] <- fromValue value =
+      Unknown <$> fromValue u1 <*> fromValue position <*> fromValue u3 <*> fromValue u4 <*> fromValue u5
+  fromValue _      = Nothing
+
+instance (FromValue a) => FromValue [a] where
+  fromValue Nil         = pure []
+  fromValue (Pair h t)  = (:) <$> fromValue h <*> fromValue t
+  fromValue _           = Nothing
+
+instance (FromValue a, FromValue b) where
+  fromValue v | [a,b] <- fromValue v = (,) <$> fromValue a <*> fromValue b
+  fromValue _ = Nothing
+
+instance (FromValue a, FromValue b, FromValue c) where
+  fromValue v | [a,b,c] <- fromValue v = (,,) <$> fromValue a <*> fromValue b <*> fromValue c
+  fromValue _ = Nothing
+
+instance (FromValue a, FromValue b, FromValue c, FromValue d) where
+  fromValue v | [a,b,c,d] <- fromValue v = (,,,) <$> fromValue a <*> fromValue b <*> fromValue c <*> fromValue d
+  fromValue _ = Nothing
+
+instance (FromValue a) => Maybe a where
+  fromValue v = pure $ fromValue a
+
+instance FromValue Value where
+  fromValue = pure
 
 start :: String -> Integer -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
 start server playerKey (n1,n2,n3,n4) = let
