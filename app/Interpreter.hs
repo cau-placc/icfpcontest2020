@@ -27,9 +27,10 @@ showData = \case
   Pic l     -> pure $ "Pic(" <> show l <> ")"
   Modulated s -> pure $  "Modulated(" <> show s <> ")"
   Part f p  -> do
-    case tryReduce f p of
+    res <- tryReduce f p
+    case res of
       Part f p    -> do
-        l <- mapM showData p
+        let l = fmap show p
         pure $ "ap " <> show f <> foldl (\a b -> a ++ ' ':b ) "" l
       o       -> showData o
 
@@ -45,12 +46,12 @@ modulateData :: Data -> MIB [Bool]
 modulateData (Int i   ) = pure $ modulate i
 modulateData (Part p t)   = do
   -- repack List, to make sure we have constructors at frone
-  p' <- continue p (t ++ app S [app C [Func IsNil, Func Nil], app S [app B [Func Cons, Func Car], Func Cdr]]) -- \x -> isnil x then nil else cons (car x) (cdr x)
+  p' <- tryReduce p (t ++ [app S [app C [Func IsNil, Func Nil], app S [app B [Func Cons, Func Car], Func Cdr]]]) -- \x -> isnil x then nil else cons (car x) (cdr x)
   case p' of
     Part Nil []     ->  pure [False,False]
     Part Cons [x,y] -> do
-      h <- modulateData x
-      t <- modulateData y
+      h <- modulateData =<< runExpr x
+      t <- modulateData =<< runExpr y
       pure $ h ++ t
     e -> do
       e' <- showData e
@@ -72,7 +73,7 @@ runExpr (Number i   ) = pure $ Int i
 runExpr (Ident  name) = runExpr =<< gets (\env -> env Map.! name)
 runExpr (Func   name) = pure $ Part name []
 
-foldApp :: AlienExpr -> [AlienExpr] -> (AlienFunc, [AlienExpr])
+foldApp :: AlienExpr -> [AlienExpr] -> MIB (AlienFunc, [AlienExpr])
 foldApp l rs  = case l of
     App nl r -> foldApp nl $ r:rs
     Number i -> throwError $ "Unexpected Number"
@@ -83,7 +84,7 @@ foldApp l rs  = case l of
 
 continue :: AlienExpr -> [AlienExpr] -> MIB Data
 continue x [] = runExpr x
-continue x t  = (uncurry tryReduce) $ foldApp x t
+continue x t  = (uncurry tryReduce) =<< foldApp x t
 
 tryReduce :: AlienFunc  -> [AlienExpr] -> MIB Data
 tryReduce Nil  (x:t)          = tryReduce T t
@@ -94,26 +95,26 @@ tryReduce S (x:y:z:t)         = continue x (y : App y x : t)
 tryReduce C (x:y:z:t)         = continue x (z:y:t)
 tryReduce B (x:y:z:t)         = continue x (App y z:t)
 tryReduce I (x:t)             = continue x t
-tryReduce T (t,_: r)          = continue t r
+tryReduce T (t:_: r)          = continue t r
 tryReduce F (_:f: r)          = continue f r
 tryReduce Car (x:t)           = continue x (Func T: t)
 tryReduce Cdr (x:t)           = continue x (Func F: t)
 tryReduce Add  [x, y] = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
-  Int <$> pure $ x' + y'
+  pure $ Int $ x' + y'
 tryReduce Minus  [x, y] = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
-  Int <$> pure $ x' - y'
+  pure $ Int $ x' - y'
 tryReduce Mul  [x, y] = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
-  Int <$> pure $ x' * y'
+  pure $ Int $ x' * y'
 tryReduce Div  [x, y] = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
-  Int <$> pure $ x' `div` y'
+  pure $  Int $ x' `div` y'
 tryReduce Eq (x:y:t) = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
@@ -138,11 +139,10 @@ tryReduce IsNil (x:t) = do
   x' <- runExpr x
   case x' of
    Part Nil [] -> tryReduce T t
-   Nil         -> tryReduce T t
    _           -> tryReduce F t
-tryReduce Interact (x2,x4,x3:t) = tryReduce F38 (x2: App (App x2 x4) x3:t)
-tryReduce Modem (x0:t) = tryReduce Dem ([app Mod [x0]:t])
-tryReduce MultipleDraw (x0:t) = tryReduce IsNil ([x0, Func Nil, app Cons [app Draw [app Car [x0]], app MultipleDraw [app Cdr [x0]]]] : t)
+tryReduce Interact (x2:x4:x3:t) = tryReduce F38 (x2: App (App x2 x4) x3:t)
+tryReduce Modem (x0:t) = tryReduce Dem (app Mod [x0]:t)
+tryReduce MultipleDraw (x0:t) = tryReduce IsNil (x0: Func Nil: app Cons [app Draw [app Car [x0]]: app MultipleDraw [app Cdr [x0]]] : t)
 tryReduce Dem [x] = do
   x' <- (runExpr >=> asModulated) x
   stringDemodulate x'
@@ -153,10 +153,10 @@ tryReduce Draw [v] = do
   e <- runExpr v
   l <- asList e
   lp <- mapM asPair l
-  lpi <- mapM (\(f, s) -> (,) <$> asInt f <*> asInt s)
+  lpi <- mapM (\(f, s) -> (,) <$> asInt f <*> asInt s) lp
   pure $ Pic lpi
 tryReduce Send [_] = undefined
-tryReduce F38 (x2,x0:t) = tryReduce IF0
+tryReduce F38 (x2:x0:t) = tryReduce IF0
             ( [ app Car [x0]
             : toExprList [app Modem [app Car [app Cdr [x0]]], app MultipleDraw [app Car [app Cdr [app Cdr [x0]]]]]
             : app Interact [x2, app Modem [app Car [app Cdr [x0]]], app Send [app Car [app Cdr [app Cdr [x0]]]]]]
