@@ -76,7 +76,7 @@ foldApp :: AlienExpr -> [AlienExpr] -> (AlienFunc, [AlienExpr])
 foldApp l rs  = case l of
     App nl r -> foldApp nl $ r:rs
     Number i -> throwError $ "Unexpected Number"
-    Ident  n ->
+    Ident  n -> do
         e <- gets (\env -> env Map.! n)
         foldApp e rs
     Func   f -> pure (f, rs)
@@ -203,7 +203,7 @@ asList = \case
     case res of
         Part Nil [] -> pure []
         Part Cons [x,y] -> (:) <$> runExpr x <*> (asList =<< runExpr y)
-        e        -> throwError $ "expected unit or pair, got" <> show e      
+        e        -> throwError $ "expected unit or pair, got" <> show e
   e        -> throwError $ "expected unit or pair, got" <> show e
 
 asModulated :: Data -> MIB String
