@@ -70,7 +70,7 @@ runExpr :: AlienExpr -> MIB Data
 runExpr (App l r    ) = (uncurry tryReduce) =<< foldApp l [r]
 runExpr (Number i   ) = pure $ Int i
 runExpr (Ident  name) = runExpr =<< gets (\env -> env Map.! name)
-runExpr (Func   name) = funcAsData name
+runExpr (Func   name) = pure $ Part name []
 
 foldApp :: AlienExpr -> [AlienExpr] -> (AlienFunc, [AlienExpr])
 foldApp l rs  = case l of
@@ -155,7 +155,7 @@ tryReduce Draw [v] = do
   lp <- mapM asPair l
   lpi <- mapM (\(f, s) -> (,) <$> asInt f <*> asInt s)
   pure $ Pic lpi
-tryReduce Send = undefined
+tryReduce Send [_] = undefined
 tryReduce F38 (x2,x0:t) = tryReduce IF0
             ( [ app Car [x0]
             : toExprList [app Modem [app Car [app Cdr [x0]]], app MultipleDraw [app Car [app Cdr [app Cdr [x0]]]]]
