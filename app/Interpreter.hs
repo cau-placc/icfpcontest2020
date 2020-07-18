@@ -91,7 +91,7 @@ funcAsData Dec = partial1 $ \e -> Int . (\x -> x - 1) <$> (runExpr >=> asInt) e
 funcAsData Inc = partial1 $ \e -> Int . (+ 1) <$> (runExpr >=> asInt) e
 funcAsData Pwr2 =
   partial1 $ \e -> Int . (\x -> 2 ^ x) <$> (runExpr >=> asInt) e
-funcAsData IsNil = partial1 $ \l -> runExpr $ app l [app K [app K [Func F]]]
+funcAsData IsNil = partial1 $ \l -> runExpr $ App l $app K [app K [Func F]]
 funcAsData Lt = partial2 $ \l r -> do
   l' <- (runExpr >=> asInt) l
   r' <- (runExpr >=> asInt) r
