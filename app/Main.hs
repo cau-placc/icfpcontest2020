@@ -3,23 +3,36 @@ import           Network.HTTP.Simple
 import qualified Data.ByteString.Lazy.UTF8     as BLU
 import           Control.Exception
 
+import AlienNetwork
+
 main :: IO ()
 main = catch (
     do
         args <- getArgs
-        putStrLn ("ServerUrl: " ++ args!!0 ++ "; PlayerKey: " ++ args!!1)
-        request (args!!0) ("(2," ++ args!!1 ++ ", nil)")
+        let server = args!!0
+            playerKey = args!!1
+        putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++ playerKey)
+
+        Right result <- join server playerKey
+        putStrLn result
+        Right result <- start server playerKey (1,2,3,4)
     ) handler
     where
         handler :: SomeException -> IO ()
         handler ex = putStrLn $ "Unexpected server response:\n" ++ show ex
 
-request :: String -> String -> IO ()
-request url body = do
-  request' <- parseRequest ("POST " ++ url)
-  let request = setRequestBodyLBS (BLU.fromString body) request'
-  response <- httpLBS request
-  let statuscode = show (getResponseStatusCode response)
-  case statuscode of
-    "200" -> putStrLn ("Server response: " ++ BLU.toString (getResponseBody response))
-    _     -> putStrLn ("Unexpected server response:\nHTTP code: " ++ statuscode ++ "\nResponse body: " ++ BLU.toString (getResponseBody response))
+join ::String ->  String -> IO (Maybe JoinResult)
+join server playerKey = let
+      body = "(2, " <> playerKey <> ", nil)"
+    in
+      post server "/aliens/send"
+
+
+
+type ShipConfiguratin = (Integer,Integer,Integer,Integer)
+
+start :: String -> String -> ShipConfiguration-> IO (Maybe StartResult)
+start server playerKey ship = let
+      body = "(3," <> playerKey <> "," <> show ship <> ")"
+    in
+      post server "/aliens/send"
