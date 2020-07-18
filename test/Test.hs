@@ -5,7 +5,7 @@ import           Interpreter.Data
 
 galaxyFile = "galaxy.txt"
 statelessFile = "stateless.txt"
-statefullFile = "statefull.txt"
+statefulFile = "stateful.txt"
 
 
 emptyList = (Func Nil)
