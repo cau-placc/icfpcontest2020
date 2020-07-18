@@ -1,6 +1,7 @@
 module Modulation where
 
  import Interpreter.Data
+ import           Syntax
  
  modulate :: Integer -> [Bool]
  modulate n =
