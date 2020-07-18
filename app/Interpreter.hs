@@ -32,22 +32,22 @@ showData = \case
   Pic l     -> pure $ "Pic(" <> show l <> ")"
   Partial _ -> pure $ "Partial"
 
- modulateToString :: Data -> MIB String
- modulateToString dat = mapM (\b -> if b then '1' else '0') =<< modulateData dat
+modulateToString :: Data -> MIB String
+modulateToString dat = mapM (\b -> if b then '1' else '0') =<< modulateData dat
 
 stringDemodulate :: String -> MIB Data
 stringDemodulate input = if all (\c -> c == '0' || c == '1') input
   then runExpr $ demodulateData $ map (\c -> if c == '0' then False else True) input
   else throwError $ "Demodulation Error: " <> input
 
- modulateData :: Data -> MIB [Bool]
- modulateData Unit       = pure $ [False, False]
- modulateData (Pair h t) = do
-    h' <- runExpr h
-    t' <- runExpr t
-    (True : True :) <$> modulateData h' <*> modulateData t'
- modulateData (Int i   ) = pure $ modulate i
- modulateData e = throwError $ "expected Unit, Pair or Integer, got " ++ show e
+modulateData :: Data -> MIB [Bool]
+modulateData Unit       = pure $ [False, False]
+modulateData (Pair h t) = do
+  h' <- runExpr h
+  t' <- runExpr t
+  (True : True :) <$> modulateData h' <*> modulateData t'
+modulateData (Int i   ) = pure $ modulate i
+modulateData e = throwError $ "expected Unit, Pair or Integer, got " ++ show e
 
 runMIB :: MIB a -> Either String a
 runMIB = runIdentity . runExceptT . flip evalStateT Map.empty . unMIB -- TODO: use except
