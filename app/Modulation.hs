@@ -2,7 +2,7 @@ module Modulation where
 
  import Interpreter.Data
  import           Syntax
- 
+
  modulate :: Integer -> [Bool]
  modulate n =
    sig
@@ -31,7 +31,7 @@ module Modulation where
    inner (True : True : rem) =
      let (l, rem1) = inner rem
          (r, rem2) = inner rem1
-     in  (app Cond [l,r], rem2)
+     in  (app Cons [l,r], rem2)
    inner number =
      let i   = demodulate number
          rem = drop (length $ modulate i) number
