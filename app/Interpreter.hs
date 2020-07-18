@@ -29,6 +29,11 @@ showData = \case
   Part f p  -> do
     res <- tryReduce f p
     case res of
+      Part Nil [] -> pure "()"
+      Part Cons [x,y] -> do
+        l <- showData =<< runExpr x
+        r <- showData =<< runExpr y
+        pure $ "(" <> l <> ", " <> r <> ")"                
       Part f p    -> do
         let l = fmap show p
         pure $ "ap " <> show f <> foldl (\a b -> a ++ ' ':b ) "" l
