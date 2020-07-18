@@ -30,7 +30,7 @@ showData = \case
     pure $ "(" <> l <> ", " <> r <> ")"
   Unit      -> pure $ "()"
   Pic l     -> pure $ "Pic(" <> show l <> ")"
-  Partial _ -> "Partial"
+  Partial _ -> pure $ "Partial"
 
 type MIBEnv = Map AlienName AlienExpr
 
