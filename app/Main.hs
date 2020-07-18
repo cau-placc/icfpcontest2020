@@ -28,7 +28,7 @@ main = catch (
 
 join ::String ->  Integer -> IO (Either StatusCode ResponseBody)
 join server playerKey = let
-      body = modulateValue $ toValue [Num 2, Num playerKey, toValue []]
+      body = modulateValue $ toValue [Num 2, Num playerKey, Nil]
     in
       post server "/aliens/send" body
 
