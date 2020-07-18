@@ -16,7 +16,7 @@ main = catch (
 
 request :: String -> String -> IO ()
 request url body = do
-  request' <- parseRequest ("GET " ++ url)
+  request' <- parseRequest ("POST " ++ url)
   let request = setRequestBodyLBS (BLU.fromString body) request'
   response <- httpLBS request
   let statuscode = show (getResponseStatusCode response)
