@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, LambdaCase #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, LambdaCase, TupleSections #-}
 
 module Interpreter where
 
@@ -57,7 +57,7 @@ funcAsData I    = partial1 $ \x -> runExpr x
 funcAsData T    = ite True
 funcAsData F    = ite False
 funcAsData IF0  = partial1 $ \z -> do
-  z' <- (runExpr >=> asInt)
+  z' <- (runExpr >=> asInt) z
   ite $ z' == 0
 funcAsData Dec  = partial1 $ \e -> Int . (\x -> x - 1) <$> (runExpr >=> asInt) e
 funcAsData Inc  = partial1 $ \e -> Int . (+ 1) <$> (runExpr >=> asInt) e
@@ -103,9 +103,9 @@ f38 = partial2 $ \prot state -> runExpr $ App
   $ App (App (App (Func Interact) prot) (App (Func Modem) (App (Func Car) (App (Func Cdr) state)))) (App (Func Send) (App (Func Car) (App (Func Cdr) (App (Func Cdr) state))))
 modem = partial1 $ \x -> runExpr $ App (Func Dem) (App (Func Mod) x)
 
-multidraw = partial1 $ \l -> App (App (Func IsNil l) Nil) $ App (App Cons (App (Func Draw) (App (Func Car) l))) $ App (Func Multidraw (App (Func Cdr) l))
+multidraw = partial1 $ \l -> runExpr $ App (App (App (Func IsNil) l) Nil) $ App (App Cons (App (Func Draw) (App (Func Car) l))) $ App (Func Multidraw) (App (Func Cdr) l)
 draw = partial1 $ \v -> do
-  l <- mapM asPair =<< asList v
+  l <- mapM (\(f,s) -> (,) <$> asInt f <*> asInt s) =<< mapM asPair =<< asList =<< runExpr v
   pure $ Pic l
 
 toExprList :: [AlienExpr] -> AlienExpr
@@ -144,9 +144,8 @@ asPair = \case
 
 asList :: Data -> MIB [Data]
 asList = \case
-  Unit      -> []
+  Unit      -> pure []
   Pair x y  -> do
-                h <- runMIB x
                 t <- asList y
-                pure $ (h:t)
+                pure $ (x:t)
   _         -> throwError "expected unit or pair"
