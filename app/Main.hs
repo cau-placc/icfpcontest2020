@@ -103,4 +103,4 @@ demodulateValue string = let
         i = demodulate number
         res = drop (length $ modulate i) number
       in
-        (Num i)
+        (Num i, res)
