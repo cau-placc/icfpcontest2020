@@ -27,7 +27,7 @@ showData = \case
   Pair l r  -> do
     l <- showData =<< runExpr l
     r <- showData =<< runExpr r
-    pure $ "(" <> l ", " <> r <> ")"
+    pure $ "(" <> l <> ", " <> r <> ")"
   Unit      -> pure $ "()"
   Pic l     -> pure $ "Pic(" <> show l <> ")"
   Partial _ -> "Partial"
