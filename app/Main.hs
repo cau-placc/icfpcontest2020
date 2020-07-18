@@ -106,7 +106,7 @@ instance (FromValue a, FromValue b, FromValue c, FromValue d) => FromValue (a,b,
   fromValue _ = Nothing
 
 instance (FromValue a) => FromValue (Maybe a) where
-  fromValue v = pure $ fromValue a
+  fromValue v = pure $ fromValue v
 
 instance FromValue Value where
   fromValue = pure
