@@ -88,4 +88,4 @@ data Value =  Nil | Pair Value Value | Num Integer
 modulateValue :: Value -> String
 modulateValue Nil         = "00"
 modulateValue (Pair f s)  = "11" ++ modulateValue f ++ modulateValue s
-modulateValue (Num i)     = map (\x -> if x then '1' else '0') moduleate i
+modulateValue (Num i)     = map (\x -> if x then '1' else '0') $ modulate i
