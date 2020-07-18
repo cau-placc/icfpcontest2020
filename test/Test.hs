@@ -14,7 +14,7 @@ list1 = app Cons [Number 0, app Cons [Number 0]]
 
 main :: IO ()
 main = do
-  galaxy <- readFile statefullFile
+  galaxy <- readFile galaxyFile
   let code       = unlines $ lines galaxy
       Right prog = either (error . show) Right $ parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
