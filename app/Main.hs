@@ -26,7 +26,7 @@ join ::String ->  String -> IO (Either StatusCode ResponseBody)
 join server playerKey = let
       body = "(2, " <> playerKey <> ", " <> showAlienList [] <>  ")"
     in
-      post server "/aliens/send"
+      post server "/aliens/send" body 
 
 
 
@@ -38,7 +38,7 @@ start :: String -> String -> ShipConfiguration-> IO (Either StatusCode ResponseB
 start server playerKey ship = let
       body = "(3, " <> playerKey <> ", " <> show ship <> ")"
     in
-      post server "/aliens/send"
+      post server "/aliens/send" body
 
 showAlienList :: [String] -> String
 showAlienList [] = "nil"
