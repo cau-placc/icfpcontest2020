@@ -101,7 +101,7 @@ instance (FromValue a, FromValue b, FromValue c) => FromValue (a,b,c) where
   fromValue v | [a,b,c] <- fromValue v = (,,) <$> fromValue a <*> fromValue b <*> fromValue c
   fromValue _ = Nothing
 
-instance (FromValue a, FromValue b, FromValue c, FromValue d) => FromValue (a,b,c,s) where
+instance (FromValue a, FromValue b, FromValue c, FromValue d) => FromValue (a,b,c,d) where
   fromValue v | [a,b,c,d] <- fromValue v = (,,,) <$> fromValue a <*> fromValue b <*> fromValue c <*> fromValue d
   fromValue _ = Nothing
 
