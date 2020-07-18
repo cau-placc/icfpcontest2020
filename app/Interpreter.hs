@@ -111,7 +111,7 @@ withPartial expr k = runExpr expr >>= \case
 asInt :: Data -> MIB Integer
 asInt = \case
   Int i -> pure i
-  _     -> fail "expected integer"
+  _     -> throwError "expected integer"
 
 asPair :: Data -> MIB (Data, Data)
 asPair = \case
