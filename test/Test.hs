@@ -16,7 +16,7 @@ main :: IO ()
 main = do
   galaxy <- readFile galaxyFile
   let code       = unlines $ lines statefullFile
-      Right prog = parseAlienProg code
+      Right prog = either (error . show) Right $ parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
         (app Interact [Ident Galaxy, list0, tuple0])
         >>= showData
