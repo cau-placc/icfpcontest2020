@@ -10,7 +10,7 @@ statefullFile = "statefull.txt"
 
 emptyList = (Func Nil)
 list0 = app Cons [Number 0, emptyList]
-tuple0 = app Cons [Number 0, Number 0]
+list1 = app Cons [Number 0, app Cons [Number 0]]
 
 main :: IO ()
 main = do
@@ -18,7 +18,7 @@ main = do
   let code       = unlines $ lines galaxy
       Right prog = either (error . show) Right $ parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
-        (app Interact [Ident Galaxy, list0, tuple0])
+        (app Interact [Ident Galaxy, list0, tuple1])
         >>= showData
   putStrLn $ "-----\nResult: " <> show result
 
