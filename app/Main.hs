@@ -56,7 +56,7 @@ type Commands = Value
 data Status = Waiting |  Running | Done deriving Show
 data GameResponse = GameResponse Status Unknown (Maybe GameState) deriving Show
 data Role = Attack | Defence deriving Show
-data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) Maybe (Integer, Integer, Integer , Integer) deriving Show
+data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
 
 
 type GameState = [Value]
