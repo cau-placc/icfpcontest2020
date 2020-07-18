@@ -33,7 +33,7 @@ showData = \case
   Partial _ -> pure $ "Partial"
 
 modulateToString :: Data -> MIB String
-modulateToString dat = mapM (\b -> if b then '1' else '0') =<< modulateData dat
+modulateToString dat = map (\b -> if b then '1' else '0') <$> modulateData dat
 
 stringDemodulate :: String -> MIB Data
 stringDemodulate input = if all (\c -> c == '0' || c == '1') input
@@ -43,9 +43,9 @@ stringDemodulate input = if all (\c -> c == '0' || c == '1') input
 modulateData :: Data -> MIB [Bool]
 modulateData Unit       = pure $ [False, False]
 modulateData (Pair h t) = do
-  h' <- runExpr h
-  t' <- runExpr t
-  (\x -> (True : True : x)) <$> modulateData h' <*> modulateData t'
+  h' <- modulateData =<< runExpr h
+  t' <- modulateData =<< runExpr t
+  (True : True :  h' ++ t')
 modulateData (Int i   ) = pure $ modulate i
 modulateData e = throwError $ "expected Unit, Pair or Integer, got " ++ show e
 
