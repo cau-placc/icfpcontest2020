@@ -8,7 +8,7 @@ statefullFile = "statefull.txt"
 
 main :: IO ()
 main = do
-  galaxy <- readFile statefullFile
+  galaxy <- readFile galaxyFile
   let code       = unlines $ lines galaxy
       Right prog = parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
