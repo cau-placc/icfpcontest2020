@@ -50,7 +50,7 @@ modulateData (Int i   ) = pure $ modulate i
 modulateData (Partial p) = do
   -- repack List
   p' <- p (app S [app C [Func IsNil, Func Nil], app S [app B [Func Cons, Func Car], Func Cdr]]) -- \x -> isnil x then nil else cons (car x) (cdr x)
-  modulateData p'''
+  modulateData p'
 
 runMIB :: MIB a -> Either String a
 runMIB = runIdentity . runExceptT . flip evalStateT Map.empty . unMIB -- TODO: use except
