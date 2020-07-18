@@ -56,9 +56,9 @@ funcAsData B    = partial3 $ \x y z -> runExpr $ App x $ App y z
 funcAsData I    = partial1 $ \x -> runExpr x
 funcAsData T    = ite True
 funcAsData F    = ite False
-funcAsData Dec  = partial1 $ \e -> Int . (- 1) <$> (runExpr >=> asInt) e
+funcAsData Dec  = partial1 $ \e -> Int . (\x -> x - 1) <$> (runExpr >=> asInt) e
 funcAsData Inc  = partial1 $ \e -> Int . (+ 1) <$> (runExpr >=> asInt) e
-funcAsData Pwr2 = partial1 $ \e -> Int . (2 **) <$> (runExpr >=> asInt) e
+funcAsData Pwr2 = partial1 $ \e -> Int . (\x -> 2 ** x) <$> (runExpr >=> asInt) e
 funcAsData IsNil = partial1 $ \p -> do
   d <- runExpr p
   \case d of
