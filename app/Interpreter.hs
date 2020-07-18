@@ -48,7 +48,7 @@ funcAsData Neg = partial1 $ \e -> Int . negate <$> (runExpr >=> asInt) e
 funcAsData Eq  = partial2 $ \l r -> do
   l' <- (runExpr >=> asInt) l
   r' <- (runExpr >=> asInt) r
-  ite $ l' == r' 
+  ite $ l' == r'
 funcAsData K    = partial2 $ \x y -> runExpr x
 funcAsData S    = partial3 $ \x y z -> runExpr $ App (App x z) (App y z)
 funcAsData C    = partial3 $ \x y z -> runExpr $ App (App x z) y
@@ -57,6 +57,14 @@ funcAsData Lt   = partial2 $ \l r -> do
   l' <- (runExpr >=> asInt) l
   r' <- (runExpr >=> asInt) r
   ite $ l' < r'
+-- TODO ap car x2 = ap x2 t
+funcAsData Car  = partial1 $ \x -> do
+  (h,_) <- (runExpr >=> asPair) x
+  pure $ h
+-- TODO ap cdr x2 = ap x2 f
+funcAsData Cdr  = partial1 $ \x -> do
+  (_,t) <- (runExpr >=> asPair) x
+  pure $ t
 funcAsData func = error $ show func
 
 ite :: Bool -> MIB Data
@@ -80,4 +88,9 @@ withPartial expr k = runExpr expr >>= \case
 asInt :: Data -> MIB Integer
 asInt = \case
   Int i -> pure i
-  _     -> throwError "expected integer"
+  _     -> fail "expected integer"
+
+asPair :: Data -> MIB (Data, Data)
+asPair = \case
+  Pair x y -> pure (x, y)
+  _        -> throwError "expected pair"
