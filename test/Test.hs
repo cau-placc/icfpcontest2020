@@ -6,14 +6,18 @@ galaxyFile = "galaxy.txt"
 statelessFile = "stateless.txt"
 statefullFile = "statefull.txt"
 
+
+emptyList = (Func Nil)
+list0 = app Cons [Number 0, emptyList]
+tuple0 = app Cons [Number 0, Number 0]
+
 main :: IO ()
 main = do
   galaxy <- readFile galaxyFile
-  let code       = unlines $ lines galaxy
+  let code       = unlines $ lines statefullFile
       Right prog = parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
-        (App (App (App (Func Interact) (Ident Galaxy)) (Func Nil))
-             (App (App (Func Cons) (Number 0)) (Number 0))
-        ) >>= showData
+        (app Interact [Ident Galaxy, list0, tuple0])
+        >>= showData
   putStrLn $ "-----\nResult: " <> show result
 
