@@ -22,7 +22,7 @@ decl :: AlienParser AlienDecl
 decl = Decl <$> name  <*> (string " =" *> expr)
 
 expr :: AlienParser AlienExpr
-expr = char ' ' >> (number <|> app <|> nil <|> cons <|> ident <|> func)
+expr = char ' ' >> (number <|> app <|> ident <|> func)
 
 number :: AlienParser AlienExpr
 number = Number <$> integer
@@ -39,17 +39,11 @@ name = string "galaxy" $> Galaxy <|> (char ':' >> FuncName <$> integer)
 ident :: AlienParser AlienExpr
 ident = Ident <$> name
 
-nil :: AlienParser AlienExpr
-nil = try $ string "nil" $> Nil
-
-cons :: AlienParser AlienExpr
-cons = try $ string "cons" $> Cons
-
 func :: AlienParser AlienExpr
 func =
   Func <$> (asum $ map (\c -> try $ string (lowercase $ show c) $> c) funcs)
  where
   funcs =
-    [IsNil, Neg, Add, Div, Mul, Minus, Car, Cdr, Eq, Lt, K, I, S, T, B, C]
+    [IsNil, Nil, Cons, Neg, Add, Div, Mul, Minus, Car, Cdr, Eq, Lt, K, I, S, T, B, C]
   lowercase = map toLower
 
