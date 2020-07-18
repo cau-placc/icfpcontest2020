@@ -10,5 +10,5 @@ main = do
     Right prog = parseAlienProg code
     Right (result, _) =
       runMIB $ loadProg prog >> runExpr (Ident Galaxy)
-  print result
+  putStrLn $ "\nResult: " <> show result
 
