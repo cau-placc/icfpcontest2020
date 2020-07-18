@@ -18,13 +18,26 @@ main = catch (
         putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++show  playerKey)
 
         Right result <- join server playerKey
-        putStrLn $ showDemodulated result
-        Right result <- start server playerKey (1,2,3,4)
-        putStrLn $ showDemodulated result
+        putStrLn $ "Join: " <> showDemodulated result
+
+        let response = valueToGameResponse $ demodulateValue result
+        combat server playerKey response
+
     ) handler
     where
         handler :: SomeException -> IO ()
         handler ex = putStrLn $ "Unexpected server response:\n" ++ show ex
+
+combat :: String -> Integer -> GameResponse -> IO ()
+combat _      _         (GameResponse Done    _       _ ) = putStrLn "Game Over!"
+combat server playerKey (GameResponse Waiting unknown state) = do
+    Right result <- start server playerKey
+    putStrLn $ "Start: " <> showDemodulated result
+    combat server playerKey $ valueToGameResponse $ demodulateValue result
+combat server playerKey (GameResponse Running unkown state) = do
+    Right result <- doNothing server playerKey
+    putStrLn $ "Nothing: " <> showDemodulated result
+    combat server playerKey $ valueToGameResponse $ demodulateValue result
 
 join ::String ->  Integer -> IO (Either StatusCode ResponseBody)
 join server playerKey = let
@@ -39,6 +52,23 @@ type ShipConfiguration = (Integer,Integer,Integer,Integer)
 
 type Commands = Value
 
+data Status = Waiting |  Running | Done
+data GameResponse = GameResponse Status Unknown (Maybe GameState)
+
+type GameState = Value
+
+valueToGameResponse :: Value -> GameResponse
+valueToGameResponse  (Pair (Num 1) (Pair status (Pair unkown (Pair gameState Nil))) ) = GameResponse (valueToStatus status) (valueToUnknown unknown) (valueToGameState gameState)
+
+valueToStatus :: Value -> Status
+valueToStatus (Num 0) = Waiting
+valueToStatus (Num 1) = Running
+valueToStatus (Num 2) = Done
+
+valueToGameState :: Value -> Maybe GameState
+valueToGameState Nil = Nothing
+valueToGameState e   = Just e
+
 start :: String -> Integer -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
 start server playerKey (n1,n2,n3,n4) = let
       body = modulateValue $ toValue [Num 3, Num playerKey, toValue [Num n1, Num n2, Num n3, Num n4]]
@@ -52,6 +82,9 @@ showAlienList (h:t) = let
     (_:t') = showAlienList t
   in
     "(" <> h <> ", " <> t'
+
+doNothing :: String -> Integer ->  IO (Either StatusCode ResponseBody)
+doNothing s p = command s p []
 
 command :: String -> Integer -> [Commands] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
