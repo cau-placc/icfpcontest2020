@@ -118,11 +118,11 @@ tryReduce Div  [x, y] = do
 tryReduce Eq (x:y:t) = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
-  tryReduce (if x == y then  T else F) t
+  tryReduce (if x' == y' then  T else F) t
 tryReduce Lt (x:y:t) = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
-  tryReduce (if x < y then  T else F) t
+  tryReduce (if x' < y' then  T else F) t
 tryReduce IF0 [x] = do
   x' <- (runExpr >=> asInt) x
   pure $ Part (if x' == 0 then T else F) []
