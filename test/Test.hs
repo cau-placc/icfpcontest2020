@@ -1,6 +1,7 @@
-import           Parser
+import           Parser hiding (app)
 import           Syntax
 import           Interpreter
+import           Interpreter.Data
 
 galaxyFile = "galaxy.txt"
 statelessFile = "stateless.txt"
