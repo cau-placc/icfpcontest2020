@@ -91,38 +91,27 @@ funcAsData Div = partial2 $ \l r -> do
   l' <- (runExpr >=> asInt) l
   r' <- (runExpr >=> asInt) r
   pure $ Int $ l' `div` r'
-funcAsData Interact  = alienInteract
-funcAsData Modem     = modem
-funcAsData F38       = f38
-funcAsData Multidraw = multidraw
-funcAsData Draw      = draw
-funcAsData func      = error $ show func
+funcAsData Interact     = alienInteract
+funcAsData Modem        = modem
+funcAsData F38          = f38
+funcAsData MultipleDraw = multidraw
+funcAsData Draw         = draw
+funcAsData func         = error $ show func
 
-alienInteract = partial3 $ \prot state vec ->
-  runExpr $ App (App (Func F38) prot) (App (App prot state) vec)
+alienInteract = partial3 $ \prot state vec ->  runExpr $
+  app F38 [prot, App (App prot state) vec]
+
 f38 = partial2 $ \prot state ->
-  runExpr
-    $ App
-        (App (App (Func IF0) (App (Func Car) state)) $ toExprList
-          [ App (Func Modem) (App (Func Car) (App (Func Cdr) state))
-          , App (Func Multidraw)
-                (App (Func Car) (App (Func Cdr) (App (Func Cdr) state)))
-          ]
-        )
-    $ App
-        (App (App (Func Interact) prot)
-             (App (Func Modem) (App (Func Car) (App (Func Cdr) state)))
-        )
-        (App (Func Send)
-             (App (Func Car) (App (Func Cdr) (App (Func Cdr) state)))
-        )
-modem = partial1 $ \x -> runExpr $ App (Func Dem) (App (Func Mod) x)
+  runExpr $
+  app IF0 [ app Car [state]
+          , toExprList [app Modem [app Car [app Cdr [state]]], app MultipleDraw [app Car [app Cdr [app [Cdr state]]]]]
+          , app Interact [prot, app Modem [app Car [app Cdr [state]0]], app Send [app Car [app Cdr [app Cdr [state]]]]]]
+
+modem = partial1 $ \x -> runExpr $ app Dem [app Mod [x]]
 
 multidraw = partial1 $ \l ->
-  runExpr
-    $ App (App (App (Func IsNil) l) $ Func Nil)
-    $ App (App (Func Cons) (App (Func Draw) (App (Func Car) l)))
-    $ App (Func Multidraw) (App (Func Cdr) l)
+  runExpr $ app IsNil [l , Func Nil, app Cons [app Draw [app Car [l]], app MultipleDraw [app Cdr [l]]]]
+
 draw = partial1 $ \v -> do
   l <-
     mapM (\(f, s) -> (,) <$> asInt f <*> asInt s)
