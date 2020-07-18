@@ -16,14 +16,15 @@ main = catch (
         Right result <- join server playerKey
         putStrLn result
         Right result <- start server playerKey (1,2,3,4)
+        putStrLn result
     ) handler
     where
         handler :: SomeException -> IO ()
         handler ex = putStrLn $ "Unexpected server response:\n" ++ show ex
 
-join ::String ->  String -> IO (Maybe JoinResult)
+join ::String ->  String -> IO (Either StatusCode ResponseBody)
 join server playerKey = let
-      body = "(2, " <> playerKey <> ", nil)"
+      body = "(2, " <> playerKey <> ", " <> showList [] <>  ")"
     in
       post server "/aliens/send"
 
@@ -31,8 +32,22 @@ join server playerKey = let
 
 type ShipConfiguratin = (Integer,Integer,Integer,Integer)
 
-start :: String -> String -> ShipConfiguration-> IO (Maybe StartResult)
+start :: String -> String -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
 start server playerKey ship = let
-      body = "(3," <> playerKey <> "," <> show ship <> ")"
+      body = "(3, " <> playerKey <> ", " <> show ship <> ")"
     in
       post server "/aliens/send"
+
+showList :: [String] -> String
+showList [] = "nil"
+showList [x] = "(" <> x <> ")"
+showList (h:t) = let
+    (_:t') = showList t
+  in
+    "(" <> h ", " <> t'
+
+command :: String -> String -> [Commands] -> IO (Either StatusCode ResponseBody)
+command server playerKey commands = let
+      body = "(4, "<>playerKey<>", " showList commands ")"
+    in 
+      post server "/aliens/send" body
