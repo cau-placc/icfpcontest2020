@@ -54,6 +54,9 @@ funcAsData S    = partial3 $ \x y z -> runExpr $ App (App x z) (App y z)
 funcAsData C    = partial3 $ \x y z -> runExpr $ App (App x z) y
 funcAsData B    = partial3 $ \x y z -> runExpr $ App x $ App y z
 funcAsData I    = partial1 $ \x -> runExpr x
+funcAsData T    = ite True
+-- funcAsData F = ite False
+
 funcAsData Lt   = partial2 $ \l r -> do
   l' <- (runExpr >=> asInt) l
   r' <- (runExpr >=> asInt) r
@@ -66,6 +69,14 @@ funcAsData Car  = partial1 $ \x -> do
 funcAsData Cdr  = partial1 $ \x -> do
   (_,t) <- (runExpr >=> asPair) x
   pure $ t
+funcAsData Mul = partial2 $ \l r -> do 
+  l' <- (runExpr >=> asInt) l
+  r' <- (runExpr >=> asInt) r
+  pure $ Int $ l' + r'
+funcAsData Div = partial2 $ \l r -> do 
+   l' <- (runExpr >=> asInt) l
+   r' <- (runExpr >=> asInt) r
+   pure $ Int $ l' `div` r'
 funcAsData func = error $ show func
 
 ite :: Bool -> MIB Data
