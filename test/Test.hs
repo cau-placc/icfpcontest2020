@@ -2,9 +2,12 @@ import           Parser
 import           Syntax
 import           Interpreter
 
+galaxyFile = "galaxy.txt"
+statelessFile = "stateless.txt"
+
 main :: IO ()
 main = do
-  galaxy <- readFile "galaxy.txt"
+  galaxy <- readFile statelessFile
   let code       = unlines $ lines galaxy
       Right prog = parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
