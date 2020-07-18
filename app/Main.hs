@@ -59,7 +59,7 @@ type GameState = Value
 type Unknown = Value
 
 valueToGameResponse :: Value -> GameResponse
-valueToGameResponse  (Pair (Num 1) (Pair status (Pair unkown (Pair gameState Nil))) ) = GameResponse (valueToStatus status) (valueToUnknown unknown) (valueToGameState gameState)
+valueToGameResponse  (Pair (Num 1) (Pair status (Pair unknown (Pair gameState Nil))) ) = GameResponse (valueToStatus status) (valueToUnknown unknown) (valueToGameState gameState)
 
 valueToStatus :: Value -> Status
 valueToStatus (Num 0) = Waiting
