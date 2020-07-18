@@ -24,7 +24,7 @@ main = catch (
 
 join ::String ->  String -> IO (Either StatusCode ResponseBody)
 join server playerKey = let
-      body = "(2, " <> playerKey <> ", " <> showList [] <>  ")"
+      body = "(2, " <> playerKey <> ", " <> showAlienList [] <>  ")"
     in
       post server "/aliens/send"
 
@@ -38,16 +38,16 @@ start server playerKey ship = let
     in
       post server "/aliens/send"
 
-showList :: [String] -> String
-showList [] = "nil"
-showList [x] = "(" <> x <> ")"
-showList (h:t) = let
-    (_:t') = showList t
+showAlienList :: [String] -> String
+showAlienList [] = "nil"
+showAlienList [x] = "(" <> x <> ")"
+showAlienList (h:t) = let
+    (_:t') = showAlienList t
   in
     "(" <> h ", " <> t'
 
 command :: String -> String -> [Commands] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
-      body = "(4, "<>playerKey<>", " showList commands ")"
+      body = "(4, "<>playerKey<>", " showAlienList commands ")"
     in 
       post server "/aliens/send" body
