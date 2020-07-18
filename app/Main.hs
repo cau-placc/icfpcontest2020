@@ -32,6 +32,8 @@ join server playerKey = let
 
 type ShipConfiguration = (Integer,Integer,Integer,Integer)
 
+type Commands = String
+
 start :: String -> String -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
 start server playerKey ship = let
       body = "(3, " <> playerKey <> ", " <> show ship <> ")"
