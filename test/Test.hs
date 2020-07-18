@@ -14,8 +14,8 @@ tuple0 = app Cons [Number 0, Number 0]
 
 main :: IO ()
 main = do
-  galaxy <- readFile galaxyFile
-  let code       = unlines $ lines statefullFile
+  galaxy <- readFile statefullFile
+  let code       = unlines $ lines galaxy
       Right prog = either (error . show) Right $ parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
         (app Interact [Ident Galaxy, list0, tuple0])
