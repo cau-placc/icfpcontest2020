@@ -44,5 +44,3 @@ send server endpoint method body = do
       "200" -> return $ Right $ BLU.toString (getResponseBody response)
       _     -> return $ Left statuscode
 
-
-

@@ -4,14 +4,16 @@ import qualified Data.ByteString.Lazy.UTF8     as BLU
 import           Control.Exception
 
 import AlienNetwork
+import Modulation
+
 
 main :: IO ()
 main = catch (
     do
         args <- getArgs
         let server = args!!0
-            playerKey = args!!1
-        putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++ playerKey)
+            playerKey = read args!!1
+        putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++show  playerKey)
 
         Right result <- join server playerKey
         putStrLn result
@@ -22,9 +24,9 @@ main = catch (
         handler :: SomeException -> IO ()
         handler ex = putStrLn $ "Unexpected server response:\n" ++ show ex
 
-join ::String ->  String -> IO (Either StatusCode ResponseBody)
+join ::String ->  Integer -> IO (Either StatusCode ResponseBody)
 join server playerKey = let
-      body = "(2, " <> playerKey <> ", " <> showAlienList [] <>  ")"
+      body = modulateValue [Num 2, Num playerKey, []]
     in
       post server "/aliens/send" body
 
@@ -32,11 +34,11 @@ join server playerKey = let
 
 type ShipConfiguration = (Integer,Integer,Integer,Integer)
 
-type Commands = String
+type Commands = Value
 
-start :: String -> String -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
-start server playerKey ship = let
-      body = "(3, " <> playerKey <> ", " <> show ship <> ")"
+start :: String -> Integer -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
+start server playerKey (n1,n2,n3,n4) = let
+      body = modulateValue [Num 3, Num playerKey, [Num n1, Num n2, Num n3, Num n4]]
     in
       post server "/aliens/send" body
 
@@ -48,8 +50,34 @@ showAlienList (h:t) = let
   in
     "(" <> h <> ", " <> t'
 
-command :: String -> String -> [Commands] -> IO (Either StatusCode ResponseBody)
+command :: String -> Integer -> [Commands] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
-      body = "(4, " <> playerKey <> ", " <> showAlienList commands <> ")"
-    in 
+      body = [Num 4, Num playerKey, commands]
+    in
       post server "/aliens/send" body
+
+
+
+type GameResponseParser = Parsec String ()
+
+parseGameResponse :: String -> Either ParseError GameResponse
+parseGameResponse = runParser gameResponse () "GameResponse"
+
+gameResponse = undefined
+
+class ToValue a where
+  toValue :: a -> Value
+
+instance (ToValue a) => ToValue [a] where
+  toValue [] = Nil
+  toValue (x:h) = Pair (toValue x) $ toValue h
+
+instance ToValue Integer where
+  toValue i = Num i
+
+data Value =  Nil | Pair Value Value | Num Integer
+
+modulateValue :: Value -> String
+modulateValue Nil         = "00"
+modulateValue (Pair f s)  = "11" ++ modulateValue f ++ modulateValue s
+modulateValue (Num i)     = map (\x -> if x then '1' else '0') moduleate i
