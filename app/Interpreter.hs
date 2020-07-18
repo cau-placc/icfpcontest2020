@@ -47,7 +47,7 @@ modulateData (Pair h t) = do
   t' <- modulateData =<< runExpr t
   pure (True : True :  h' ++ t')
 modulateData (Int i   ) = pure $ modulate i
-modulateData (Partial p) =
+modulateData (Partial p) = do
   -- repack List
   p' <- p (app S [app C [Func IsNil, Func Nil], app S [app B [Func Cons, Func Car], Func Cdr]]) -- \x -> isnil x then nil else cons (car x) (cdr x)
   modulateData p'''
