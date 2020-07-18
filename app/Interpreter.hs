@@ -123,8 +123,7 @@ funcAsData MultipleDraw = multidraw
 funcAsData Draw         = draw
 funcAsData Dem          = partial1 $ \v -> do
   modu <- (runExpr >=> asModulated) v
-  let dat = demodulateData modu
-  pure $ dat
+  stringDemodulate modu
 funcAsData Mod          = partial1 $ \v -> do
   dat <- runExpr v
   let modu = modulateData dat
