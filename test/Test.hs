@@ -4,10 +4,11 @@ import           Interpreter
 
 galaxyFile = "galaxy.txt"
 statelessFile = "stateless.txt"
+statefullFile = "statefull.txt"
 
 main :: IO ()
 main = do
-  galaxy <- readFile statelessFile
+  galaxy <- readFile statefullFile
   let code       = unlines $ lines galaxy
       Right prog = parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
