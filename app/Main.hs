@@ -14,7 +14,7 @@ main = catch (
     do
         args <- getArgs
         let server = args!!0
-            playerKey = read args!!1
+            playerKey = read $ args!!1
         putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++show  playerKey)
 
         Right result <- join server playerKey
