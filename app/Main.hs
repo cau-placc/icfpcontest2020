@@ -56,6 +56,7 @@ data Status = Waiting |  Running | Done
 data GameResponse = GameResponse Status Unknown (Maybe GameState)
 
 type GameState = Value
+type Unknown = Value
 
 valueToGameResponse :: Value -> GameResponse
 valueToGameResponse  (Pair (Num 1) (Pair status (Pair unkown (Pair gameState Nil))) ) = GameResponse (valueToStatus status) (valueToUnknown unknown) (valueToGameState gameState)
@@ -64,6 +65,9 @@ valueToStatus :: Value -> Status
 valueToStatus (Num 0) = Waiting
 valueToStatus (Num 1) = Running
 valueToStatus (Num 2) = Done
+
+valueToUnknown :: Value -> Unknown
+valueToUnknown = id
 
 valueToGameState :: Value -> Maybe GameState
 valueToGameState Nil = Nothing
