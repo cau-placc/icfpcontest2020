@@ -31,7 +31,7 @@ main = catch (
 combat :: String -> Integer -> GameResponse -> IO ()
 combat _      _         (GameResponse Done    _       _ ) = putStrLn "Game Over!"
 combat server playerKey (GameResponse Waiting unknown state) = do
-    Right result <- start server playerKey
+    Right result <- start server playerKey (1,2,3,4)
     putStrLn $ "Start: " <> showDemodulated result
     combat server playerKey $ valueToGameResponse $ demodulateValue result
 combat server playerKey (GameResponse Running unkown state) = do
