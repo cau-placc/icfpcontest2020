@@ -18,9 +18,9 @@ main = catch (
         putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++show  playerKey)
 
         Right result <- join server playerKey
-        putStrLn result
+        putStrLn $ showDemodulated result
         Right result <- start server playerKey (1,2,3,4)
-        putStrLn result
+        putStrLn $ showDemodulated result
     ) handler
     where
         handler :: SomeException -> IO ()
@@ -32,7 +32,8 @@ join server playerKey = let
     in
       post server "/aliens/send" body
 
-
+showDemodulated :: String -> String
+showDemodulated = show . demodulateValue
 
 type ShipConfiguration = (Integer,Integer,Integer,Integer)
 
@@ -58,18 +59,6 @@ command server playerKey commands = let
     in
       post server "/aliens/send" body
 
-
-data GameState = NotStarted | Running | Ended
-
-data GameResponse = GameResponse GameState [Value] [Value]
-
-type GameResponseParser = Parsec String ()
-
-parseGameResponse :: String -> Either ParseError GameResponse
-parseGameResponse = runParser gameResponse () "GameResponse"
-
-gameResponse = undefined
-
 class ToValue a where
   toValue :: a -> Value
 
@@ -85,7 +74,33 @@ instance ToValue Integer where
 
 data Value =  Nil | Pair Value Value | Num Integer
 
+instance Show Value where
+  show Nil          = "nil"
+  show (Pair l r)   = case r of
+    Nil -> "(" <> show l <> ")"
+    Num i -> "(" <> show i <> ")"
+    p@(Pair _ _) -> "(" <> show l <> ", " <> tail (show p)
+  show (Num i) = show i
+
 modulateValue :: Value -> String
 modulateValue Nil         = "00"
 modulateValue (Pair f s)  = "11" ++ modulateValue f ++ modulateValue s
 modulateValue (Num i)     = map (\x -> if x then '1' else '0') $ modulate i
+
+demodulateValue :: String -> Value
+demodulateValue string = let
+      binary = fmap (\c -> if '0' then False else True) string
+    in
+      fst $ demodulateV binary
+  where
+    demodulateV (False: False: res) = (Nil, res)
+    demodulateV (True : True : res) = let
+        (l, res1) = demodulateV res
+        (r, res2) = demodulateV res1
+      in
+        (Pair l r, res2)
+    demodulateV number = let
+        i = demodulate number
+        res = drop (length $ modulate i) number
+      in
+        (Num i)
