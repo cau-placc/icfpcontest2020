@@ -50,6 +50,6 @@ showAlienList (h:t) = let
 
 command :: String -> String -> [Commands] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
-      body = "(4, "<>playerKey<>", " showAlienList commands ")"
+      body = "(4, " <> playerKey <> ", " <> showAlienList commands <> ")"
     in 
       post server "/aliens/send" body
