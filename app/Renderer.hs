@@ -31,13 +31,13 @@ renderDataAsPngTo fp d = case renderDataAsImage d of
 renderDataAsImage :: Data -> Maybe (Image PixelRGB8)
 renderDataAsImage (Pic pxs) = Just $ generateImage renderer width height
   where pxs'            = mapPair fromIntegral <$> pxs
-        minX            = minimum $ fst <$> pxs'
-        minY            = minimum $ snd <$> pxs'
+        (minX, minY)    = mapPair minimum $ unzip pxs'
         pxs''           = (\(x, y) -> (x - minX, y - minY)) <$> pxs'
-        (width, height) = maximum pxs''
-        renderer x y    = let isWhite = elem (x, y) pxs''
+        scale           = 10
+        (width, height) = mapPair (* scale) $ mapPair (+ 1) $ mapPair maximum $ unzip pxs''
+        renderer x y    = let isWhite = elem (x `div` scale, y `div` scale) pxs''
                               color   = if isWhite then 255 else 0
-                          in PixelRGB8 (fromIntegral x) (fromIntegral y) color
+                          in PixelRGB8 color color color
 renderDataAsImage _         = Nothing
 
 -- Maps a function over a pair
