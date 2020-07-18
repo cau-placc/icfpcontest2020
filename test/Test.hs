@@ -9,7 +9,7 @@ main = do
       Right prog = parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
         (App (App (App (Func Interact) (Ident Galaxy)) (Func Nil))
-             (App (App (Func Cons) (Number 1)) (Number 2))
+             (App (App (Func Cons) (Number 0)) (Number 0))
         )
   putStrLn $ "-----\nResult: " <> show result
 
