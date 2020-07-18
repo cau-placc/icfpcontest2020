@@ -30,9 +30,16 @@ renderDataAsPngTo fp d = case renderDataAsImage d of
 -- Renders the given data to an image if it is a Pic.
 renderDataAsImage :: Data -> Maybe (Image PixelRGB8)
 renderDataAsImage (Pic pxs) = Just $ generateImage renderer width height
-  where renderer x y = let isWhite = elem (fromIntegral x, fromIntegral y) pxs
-                           color   = if isWhite then 255 else 0
-                       in PixelRGB8 (fromIntegral x) (fromIntegral y) color
-        width        = fromIntegral $ fst $ maximumBy (comparing fst) pxs
-        height       = fromIntegral $ snd $ maximumBy (comparing snd) pxs
+  where pxs'            = mapPair fromIntegral <$> pxs
+        minX            = minimum $ fst <$> pxs'
+        minY            = minimum $ snd <$> pxs'
+        pxs''           = (\(x, y) -> (x - minX, y - minY)) <$> pxs'
+        (width, height) = maximum pxs''
+        renderer x y    = let isWhite = elem (x, y) pxs''
+                              color   = if isWhite then 255 else 0
+                          in PixelRGB8 (fromIntegral x) (fromIntegral y) color
 renderDataAsImage _         = Nothing
+
+-- Maps a function over a pair
+mapPair :: (a -> b) -> (a, a) -> (b, b)
+mapPair f (x, y) = (f x, f y)
