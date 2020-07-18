@@ -21,6 +21,17 @@ import Debug.Trace
 
 data Data = Partial (AlienExpr -> MIB Data) | Int Integer | Pair AlienExpr AlienExpr | Unit | Pic [(Integer, Integer)] deriving (Show)
 
+showData :: Data -> MIB Show
+showData = \case
+  Int i     -> pure $ show i
+  Pair l r  -> do
+    l <- showData =<< runExpr l
+    r <- showData =<< runExpr r
+    pure $ "(" <> l ", " <> r <> ")
+  Unit      -> pure $ "()"
+  Pic l     -> pure $ "Pic(" <> show l <> ")"
+  Partial _ -> "Partial"
+
 type MIBEnv = Map AlienName AlienExpr
 
 newtype MIB a = MIB { unMIB :: StateT MIBEnv (Except String) a }
