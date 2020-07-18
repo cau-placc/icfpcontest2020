@@ -121,11 +121,11 @@ funcAsData Modem        = modem
 funcAsData F38          = f38
 funcAsData MultipleDraw = multidraw
 funcAsData Draw         = draw
-funcAsData Dem          = partial1 $ \v ->
+funcAsData Dem          = partial1 $ \v -> do
   modu <- (runExpr v >=> asModulated) v
   let dat = demodulateData modu
   pure $ dat
-funcAsData Mod          = partial1 $ \v ->
+funcAsData Mod          = partial1 $ \v -> do
   dat <- runExpr v
   let modu = modulateData dat
   pure $ Modulated modu
