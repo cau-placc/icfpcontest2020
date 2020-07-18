@@ -84,7 +84,7 @@ instance FromValue Role where
   fromValue _       = Nothing
 
 instance FromValue Unknown where
-  fromValue values | Just [u1, position, u3, u4, u5] <- fromValue value =
+  fromValue v | Just [u1, position, u3, u4, u5] <- fromValue v =
       Unknown <$> fromValue u1 <*> fromValue position <*> fromValue u3 <*> fromValue u4 <*> fromValue u5
   fromValue _      = Nothing
 
@@ -94,15 +94,15 @@ instance (FromValue a) => FromValue [a] where
   fromValue _           = Nothing
 
 instance (FromValue a, FromValue b) => FromValue (a,b) where
-  fromValue v | [a,b] <- fromValue v = (,) <$> fromValue a <*> fromValue b
+  fromValue v | Just [a,b] <- fromValue v = (,) <$> fromValue a <*> fromValue b
   fromValue _ = Nothing
 
 instance (FromValue a, FromValue b, FromValue c) => FromValue (a,b,c) where
-  fromValue v | [a,b,c] <- fromValue v = (,,) <$> fromValue a <*> fromValue b <*> fromValue c
+  fromValue v | Just [a,b,c] <- fromValue v = (,,) <$> fromValue a <*> fromValue b <*> fromValue c
   fromValue _ = Nothing
 
 instance (FromValue a, FromValue b, FromValue c, FromValue d) => FromValue (a,b,c,d) where
-  fromValue v | [a,b,c,d] <- fromValue v = (,,,) <$> fromValue a <*> fromValue b <*> fromValue c <*> fromValue d
+  fromValue v | Just [a,b,c,d] <- fromValue v = (,,,) <$> fromValue a <*> fromValue b <*> fromValue c <*> fromValue d
   fromValue _ = Nothing
 
 instance (FromValue a) => FromValue (Maybe a) where
