@@ -184,7 +184,7 @@ asInt = \case
 asPair :: Data -> MIB (Data, Data)
 asPair = \case
   Pair x y -> (,) <$> runExpr x <*> runExpr y
-  _        -> throwError "expected pair"
+  e        -> throwError $ "expected pair, got" <> show e
 
 asModulated :: Data -> MIB String
 asModulated = \case
