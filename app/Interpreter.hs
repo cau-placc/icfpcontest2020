@@ -122,7 +122,7 @@ funcAsData F38          = f38
 funcAsData MultipleDraw = multidraw
 funcAsData Draw         = draw
 funcAsData Dem          = partial1 $ \v -> do
-  modu <- (runExpr v >=> asModulated) v
+  modu <- (runExpr >=> asModulated) v
   let dat = demodulateData modu
   pure $ dat
 funcAsData Mod          = partial1 $ \v -> do
