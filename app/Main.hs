@@ -89,7 +89,7 @@ modulateValue (Num i)     = map (\x -> if x then '1' else '0') $ modulate i
 
 demodulateValue :: String -> Value
 demodulateValue string = let
-      binary = fmap (\c -> if '0' then False else True) string
+      binary = fmap (\c -> if c == '0' then False else True) string
     in
       fst $ demodulateV binary
   where
