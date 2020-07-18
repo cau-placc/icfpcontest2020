@@ -13,4 +13,4 @@ data AlienExpr = App AlienExpr AlienExpr
                | Cons
                | Func AlienFunc deriving (Show, Eq)
 
-data AlienFunc = Lt | Eq | S | T | K | I | B | C | Neg | Add | Mul | Div | Minus | IsNil | Car | Cdr deriving (Show, Eq)
+data AlienFunc = Lt | Eq | S | T | F | K | I | B | C | Neg | Add | Mul | Div | Minus | IsNil | Car | Cdr deriving (Show, Eq)
