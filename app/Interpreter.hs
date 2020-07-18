@@ -17,7 +17,7 @@ import           Data.Functor.Identity          ( Identity
 
 (.:) = (.) . (.)
 
-data Data = Partial (AlienExpr -> MIB Data) | Int Integer | Pair Data Data | Unit deriving (Show)
+data Data = Partial (AlienExpr -> MIB Data) | Int Integer | Pair Data Data | Unit | Pic [(Integer, Integer)] deriving (Show)
 
 type MIBEnv = Map AlienName AlienExpr
 
@@ -56,6 +56,9 @@ funcAsData B    = partial3 $ \x y z -> runExpr $ App x $ App y z
 funcAsData I    = partial1 $ \x -> runExpr x
 funcAsData T    = ite True
 funcAsData F    = ite False
+funcAsData IF0  = partial1 $ \z -> do
+  z' <- (runExpr >=> asInt)
+  ite $ z' == 0
 funcAsData Dec  = partial1 $ \e -> Int . (\x -> x - 1) <$> (runExpr >=> asInt) e
 funcAsData Inc  = partial1 $ \e -> Int . (+ 1) <$> (runExpr >=> asInt) e
 funcAsData Pwr2 = partial1 $ \e -> Int . (\x -> 2 ^ x) <$> (runExpr >=> asInt) e
@@ -90,13 +93,20 @@ funcAsData Div = partial2 $ \l r -> do
 funcAsData Interact = alienInteract
 funcAsData Modem = modem
 funcAsData F38 = f38
+funcAsData Multidraw = multidraw
+funcAsData Draw = draw
 funcAsData func = error $ show func
 
 alienInteract = partial3 $ \prot state vec -> runExpr $ App (App (Func F38) prot) (App (App prot state) vec)
 f38 = partial2 $ \prot state -> runExpr $ App
   (App (App (Func IF0) (App (Func Car) state)) $ toExprList [App (Func Modem) (App (Func Car) (App (Func Cdr) state)), App (Func Multidraw) (App (Func Car) (App (Func Cdr) (App (Func Cdr) state)))])
   $ App (App (App (Func Interact) prot) (App (Func Modem) (App (Func Car) (App (Func Cdr) state)))) (App (Func Send) (App (Func Car) (App (Func Cdr) (App (Func Cdr) state))))
-modem = partial1 $ \x -> runExpr $ App (Func Dem) (App (Func Mod) x) 
+modem = partial1 $ \x -> runExpr $ App (Func Dem) (App (Func Mod) x)
+
+multidraw = partial1 $ \l -> App (App (Func IsNil l) Nil) $ App (App Cons (App (Func Draw) (App (Func Car) l))) $ App (Func Multidraw (App (Func Cdr) l))
+draw = partial1 $ \v -> do
+  l <- mapM asPair =<< asList v
+  pure $ Pic l
 
 toExprList :: [AlienExpr] -> AlienExpr
 toExprList [] = Nil
@@ -131,3 +141,12 @@ asPair :: Data -> MIB (Data, Data)
 asPair = \case
   Pair x y -> pure (x, y)
   _        -> throwError "expected pair"
+
+asList :: Data -> MIB [Data]
+asList = \case
+  Unit      -> []
+  Pair x y  -> do
+                h <- runMIB x
+                t <- asList y
+                pure $ (h:t)
+  _         -> throwError "expected unit or pair"
