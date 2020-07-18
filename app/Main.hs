@@ -8,8 +8,7 @@ main = catch (
     do
         args <- getArgs
         putStrLn ("ServerUrl: " ++ args!!0 ++ "; PlayerKey: " ++ args!!1)
-        putStrLn (concat args)
-        request (args!!0 ++ "/logs") (args!!1)
+        request (args!!0) (args!!1)
     ) handler
     where
         handler :: SomeException -> IO ()
