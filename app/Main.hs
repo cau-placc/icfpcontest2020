@@ -59,6 +59,9 @@ command server playerKey commands = let
       post server "/aliens/send" body
 
 
+data GameState = NotStarted | Running | Ended
+
+data GameResponse = GameResponse GameState [Value] [Value]
 
 type GameResponseParser = Parsec String ()
 
