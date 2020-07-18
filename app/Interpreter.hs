@@ -62,10 +62,105 @@ loadDecl :: AlienDecl -> MIB ()
 loadDecl (Decl ident expr) = modify $ Map.insert ident expr
 
 runExpr :: AlienExpr -> MIB Data
-runExpr (App l r    ) = withPartial l ($ r)
+runExpr (App l r    ) = (uncurry tryReduce) =<< foldApp l [r]
 runExpr (Number i   ) = pure $ Int i
 runExpr (Ident  name) = runExpr =<< gets (\env -> env Map.! name)
 runExpr (Func   name) = funcAsData name
+
+foldApp :: AlienExpr -> [AlienExpr] -> (AlienFunc, [AlienExpr])
+foldApp l rs  = case l of
+    App nl r -> foldApp nl $ r:rs
+    Number i -> throwError $ "Unexpected Number"
+    Ident  n ->
+        e <- gets (\env -> env Map.! n)
+        foldApp e rs
+    Func   f -> pure (f, rs)
+
+continue :: AlienExpr -> [AlienExpr] -> MIB Data
+continue x [] = runExpr x
+continue x t  = (uncurry tryReduce) $ foldApp x t
+
+tryReduce :: AlienFunc  -> [AlienExpr] -> MIB Data
+tryReduce Nil  (x:t)          = tryReduce T t
+tryReduce Neg  [x]            = Int . negate <$> (runExpr >=> asInt) x
+tryReduce Cons (x: y: z: t)   = continue z (x:y:t)
+tryReduce K (x:y:t)           = continue x t
+tryReduce S (x:y:z:t)         = continue x (y : App y x : t)
+tryReduce C (x:y:z:t)         = continue x (z:y:t)
+tryReduce B (x:y:z:t)         = continue x (App y z:t)
+tryReduce I (x:t)             = continue x t
+tryReduce T (t,_: r)          = continue t r
+tryReduce F (_:f: r)          = continue f r
+tryReduce Car (x:t)           = continue x (Func T: t)
+tryReduce Cdr (x:t)           = continue x (Func F: t)
+tryReduce Add  [x, y] = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  Int <$> pure $ x' + y'
+tryReduce Minus  [x, y] = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  Int <$> pure $ x' - y'
+tryReduce Mul  [x, y] = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  Int <$> pure $ x' * y'
+tryReduce Div  [x, y] = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  Int <$> pure $ x' `div` y'
+tryReduce Eq (x:y:t) do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  tryReduce (if x == y then  T else F) t
+tryReduce Lt (x:y:t) = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  tryReduce (if x < y then  T else F) t
+tryReduce IF0 [x] = do
+  x' <- (runExpr >=> asInt) x
+  pure $ Part (if x' == 0 then T else F) []
+tryReduce Dec [x] = do
+  x' <- (runExpr >=> asInt) x
+  pure $ Int $ x' - 1
+tryReduce Inc [x] = do
+  x' <- (runExpr >=> asInt) x
+  pure $ Int $ x' + 1
+tryReduce Pwr2 [x] = do
+  x' <- (runExpr >=> asInt) x
+  pure $ Int $ 2 ^ x'
+tryReduce IsNil (x:t) =
+  x' <- runExpr x
+  case x' of
+   Part Nil [] -> tryReduce T t
+   Nil         -> tryReduce T t
+   _           -> tryReduce F t
+tryReduce Interact (x2,x4,x3:t) = tryReduce F38 (x2: App (App x2 x4) x3:t)
+tryReduce Modem (x0:t) = tryReduce Dem ([app Mod [x0]:t])
+tryReduce MultipleDraw (x0:t) = tryReduce IsNil ([x0, Func Nil, app Cons [app Draw [app Car [l]], app MultipleDraw [app Cdr [l]]]] : t)
+tryReduce Dem [x]
+  x' <- (runExpr >=> asModulated) x
+  stringDemodulate x'
+tryReduce Mod [x] = do 
+  x' <- runExpr x
+  Modulated <$> modulateToString x'
+tryReduce Draw [v] = do
+  e <- runExpr v
+  l <- asList e
+  lp <- mapM asPair l
+  lpi <- mapM (\(f, s) -> (,) <$> asInt f <*> asInt s)
+  pure $ Pic lpi
+tryReduce Send = undefined
+tryReduce F38 (x2,x0:t) = tryReduce IF0
+            ( [ app Car [x0]
+            : toExprList [app Modem [app Car [app Cdr [x0]]], app MultipleDraw [app Car [app Cdr [app Cdr [x0]]]]]
+            : app Interact [x2, app Modem [app Car [app Cdr [x0]]], app Send [app Car [app Cdr [app Cdr [x0]]]]]]
+            : t
+            )
+
+-- can't reduce at the moment
+tryReduce f p   = pure $ Part f p
+
 
 funcAsData :: AlienFunc -> MIB Data
 funcAsData Nil  = pure Unit
