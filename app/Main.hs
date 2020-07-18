@@ -30,7 +30,7 @@ join server playerKey = let
 
 
 
-type ShipConfiguratin = (Integer,Integer,Integer,Integer)
+type ShipConfiguration = (Integer,Integer,Integer,Integer)
 
 start :: String -> String -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
 start server playerKey ship = let
