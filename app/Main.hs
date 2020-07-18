@@ -28,7 +28,7 @@ main = catch (
 
 join ::String ->  Integer -> IO (Either StatusCode ResponseBody)
 join server playerKey = let
-      body = modulateValue [Num 2, Num playerKey, []]
+      body = modulateValue $ toValue [Num 2, Num playerKey, []]
     in
       post server "/aliens/send" body
 
@@ -40,7 +40,7 @@ type Commands = Value
 
 start :: String -> Integer -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
 start server playerKey (n1,n2,n3,n4) = let
-      body = modulateValue [Num 3, Num playerKey, [Num n1, Num n2, Num n3, Num n4]]
+      body = modulateValue $ toValue [Num 3, Num playerKey, [Num n1, Num n2, Num n3, Num n4]]
     in
       post server "/aliens/send" body
 
@@ -54,7 +54,7 @@ showAlienList (h:t) = let
 
 command :: String -> Integer -> [Commands] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
-      body = [Num 4, Num playerKey, commands]
+      body = modulateValue $ toValue [Num 4, Num playerKey, commands]
     in
       post server "/aliens/send" body
 
@@ -72,6 +72,9 @@ gameResponse = undefined
 
 class ToValue a where
   toValue :: a -> Value
+
+instance ToValue Value where
+  toValue = id
 
 instance (ToValue a) => ToValue [a] where
   toValue [] = Nil
