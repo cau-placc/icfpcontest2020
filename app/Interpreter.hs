@@ -123,9 +123,9 @@ tryReduce Lt (x:y:t) = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
   tryReduce (if x' < y' then  T else F) t
-tryReduce IF0 [x] = do
+tryReduce IF0 (x:t) = do
   x' <- (runExpr >=> asInt) x
-  pure $ Part (if x' == 0 then T else F) []
+  tryReduce (if x' == 0 then T else F) t
 tryReduce Dec [x] = do
   x' <- (runExpr >=> asInt) x
   pure $ Int $ x' - 1
