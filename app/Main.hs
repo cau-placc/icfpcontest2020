@@ -67,6 +67,10 @@ demodulateResponse = fromValue . demodulateValue
 class FromValue a where
   fromValue :: Value -> Maybe a
 
+instance FromValue Integer where
+  fromValue (Num i) = pure i
+  fromValue _       = Nothing
+
 instance FromValue GameResponse where
   fromValue (Pair (Num 1) (Pair status (Pair unknown (Pair gameState Nil))) ) = do
       GameResponse <$> fromValue status <*> fromValue unknown <*> fromValue gameState
