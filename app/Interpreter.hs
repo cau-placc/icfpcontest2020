@@ -53,6 +53,7 @@ funcAsData K    = partial2 $ \x y -> runExpr x
 funcAsData S    = partial3 $ \x y z -> runExpr $ App (App x z) (App y z)
 funcAsData C    = partial3 $ \x y z -> runExpr $ App (App x z) y
 funcAsData B    = partial3 $ \x y z -> runExpr $ App x $ App y z
+funcAsData I    = partial1 $ \x -> runExpr x
 funcAsData Lt   = partial2 $ \l r -> do
   l' <- (runExpr >=> asInt) l
   r' <- (runExpr >=> asInt) r
