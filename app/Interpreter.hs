@@ -45,7 +45,7 @@ modulateData Unit       = pure $ [False, False]
 modulateData (Pair h t) = do
   h' <- runExpr h
   t' <- runExpr t
-  (True : True :) <$> modulateData h' <*> modulateData t'
+  (\x -> (True : True : x)) <$> modulateData h' <*> modulateData t'
 modulateData (Int i   ) = pure $ modulate i
 modulateData e = throwError $ "expected Unit, Pair or Integer, got " ++ show e
 
