@@ -87,7 +87,21 @@ funcAsData Div = partial2 $ \l r -> do
    l' <- (runExpr >=> asInt) l
    r' <- (runExpr >=> asInt) r
    pure $ Int $ l' `div` r'
+funcAsData Interact = interact
+funcAsData Modem = modem
+funcAsData F38 = f38
 funcAsData func = error $ show func
+
+interact = partial3 $ \prot state vec -> runExpr $ App (App F38 prot) (App (App prot state) vec)
+f38 = partial2 $ \prot state -> runExpr $ App
+  (App (App IF0 (App Car state)) $ toExprList [App Modem (App Car (App Cdr state)), App Multidraw (App Car (App Cdr (App (Cdr state))))])
+  App (App (App Interact prot) (App Modem (App Car (App Cdr state)))) (App Send (App Car (App Cdr (App Cdr state))))
+modem = partial1 $ \x -> runExpr $ App Dem (App Mod) x
+
+toExprList :: [AlienExpr] -> AlienExpr
+toExprList [] = Nil
+toExprList (h:t) = App (App Cons h) $ toExprList t
+
 
 ite :: Bool -> MIB Data
 ite cond = partial2 $ \t f -> runExpr $ if cond then t else f
