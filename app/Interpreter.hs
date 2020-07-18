@@ -33,7 +33,7 @@ showData = \case
       Part Cons [x,y] -> do
         l <- showData =<< runExpr x
         r <- showData =<< runExpr y
-        pure $ "(" <> l <> ", " <> r <> ")"                
+        pure $ "(" <> l <> ", " <> r <> ")"
       Part f p    -> do
         let l = fmap show p
         pure $ "ap " <> show f <> foldl (\a b -> a ++ ' ':b ) "" l
@@ -50,8 +50,7 @@ stringDemodulate input = if all (\c -> c == '0' || c == '1') input
 modulateData :: Data -> MIB [Bool]
 modulateData (Int i   ) = pure $ modulate i
 modulateData (Part p t)   = do
-  -- repack List, to make sure we have constructors at frone
-  p' <- tryReduce p (t ++ [app S [app C [Func IsNil, Func Nil], app S [app B [Func Cons, Func Car], Func Cdr]]]) -- \x -> isnil x then nil else cons (car x) (cdr x)
+  p' <- tryReduce p t
   case p' of
     Part Nil []     ->  pure [False,False]
     Part Cons [x,y] -> do
@@ -60,7 +59,7 @@ modulateData (Part p t)   = do
       pure $ h ++ t
     e -> do
       e' <- showData e
-      throwError $ "Expeted Nil or Cons, got " <> e'
+      throwError $ "Expected Nil or Cons, got " <> e'
 
 
 runMIB :: MIB a -> Either String a
