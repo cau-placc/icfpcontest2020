@@ -142,7 +142,7 @@ tryReduce IsNil (x:t) = do
    _           -> tryReduce F t
 tryReduce Interact (x2:x4:x3:t) = tryReduce F38 (x2: App (App x2 x4) x3:t)
 tryReduce Modem (x0:t) = tryReduce Dem (app Mod [x0]:t)
-tryReduce MultipleDraw (x0:t) = tryReduce IsNil (x0: Func Nil: app Cons [app Draw [app Car [x0]]: app MultipleDraw [app Cdr [x0]]] : t)
+tryReduce MultipleDraw (x0:t) = tryReduce IsNil (x0: Func Nil: (app Cons [app Draw [app Car [x0]]: app MultipleDraw [app Cdr [x0]]]) : t)
 tryReduce Dem [x] = do
   x' <- (runExpr >=> asModulated) x
   stringDemodulate x'
@@ -157,9 +157,9 @@ tryReduce Draw [v] = do
   pure $ Pic lpi
 tryReduce Send [_] = undefined
 tryReduce F38 (x2:x0:t) = tryReduce IF0
-            ( [ app Car [x0]
+            (  app Car [x0]
             : toExprList [app Modem [app Car [app Cdr [x0]]], app MultipleDraw [app Car [app Cdr [app Cdr [x0]]]]]
-            : app Interact [x2, app Modem [app Car [app Cdr [x0]]], app Send [app Car [app Cdr [app Cdr [x0]]]]]]
+            : (app Interact [x2, app Modem [app Car [app Cdr [x0]]], app Send [app Car [app Cdr [app Cdr [x0]]]]])
             : t
             )
 
@@ -173,21 +173,23 @@ toExprList (h : t) = app Cons [h, toExprList t]
 asInt :: Data -> MIB Integer
 asInt = \case
   Int i -> pure i
-  Part f p -> case tryReduce f p of
-                Int i -> pure i
-                e     -> do
-                  e' <- showData e
-                  throwError $ "expected integer, got " <> e'
+  Part f p -> do
+    res <- tryReduce f p
+    case res of
+            Int i -> pure i
+            e     -> do
+              e' <- showData e
+              throwError $ "expected integer, got " <> e'
   e     -> do
-    e' <- showData e
-    throwError $ "expected integer, got " <> e'
+      e' <- showData e
+      throwError $ "expected integer, got " <> e'
 
 asPair :: Data -> MIB (Data, Data)
 asPair = \case
   Part Cons [x,y] ->
     (,) <$> runExpr x <*> runExpr y
   Part f    p     -> do
-    res <- continue f p
+    res <- tryReduce f p
     case res of
       Part Cons [x,y]   ->
           (,) <$> runExpr x <*> runExpr y
