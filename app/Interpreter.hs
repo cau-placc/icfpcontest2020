@@ -134,7 +134,7 @@ tryReduce Inc [x] = do
 tryReduce Pwr2 [x] = do
   x' <- (runExpr >=> asInt) x
   pure $ Int $ 2 ^ x'
-tryReduce IsNil (x:t) =
+tryReduce IsNil (x:t) = do
   x' <- runExpr x
   case x' of
    Part Nil [] -> tryReduce T t
