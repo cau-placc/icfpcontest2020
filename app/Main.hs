@@ -93,15 +93,15 @@ instance (FromValue a) => FromValue [a] where
   fromValue (Pair h t)  = (:) <$> fromValue h <*> fromValue t
   fromValue _           = Nothing
 
-instance (FromValue a, FromValue b) where
+instance (FromValue a, FromValue b) => (a,b) where
   fromValue v | [a,b] <- fromValue v = (,) <$> fromValue a <*> fromValue b
   fromValue _ = Nothing
 
-instance (FromValue a, FromValue b, FromValue c) where
+instance (FromValue a, FromValue b, FromValue c) => (a,b,c) where
   fromValue v | [a,b,c] <- fromValue v = (,,) <$> fromValue a <*> fromValue b <*> fromValue c
   fromValue _ = Nothing
 
-instance (FromValue a, FromValue b, FromValue c, FromValue d) where
+instance (FromValue a, FromValue b, FromValue c, FromValue d) => (a,b,c,s) where
   fromValue v | [a,b,c,d] <- fromValue v = (,,,) <$> fromValue a <*> fromValue b <*> fromValue c <*> fromValue d
   fromValue _ = Nothing
 
