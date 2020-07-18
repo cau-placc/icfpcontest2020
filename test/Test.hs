@@ -8,8 +8,8 @@ main = do
   let code       = unlines $ lines galaxy
       Right prog = parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
-        (App (App (App (Func Interact) (Ident Galaxy)) Nil)
-             (App (App Cons (Number 0)) (Number 0))
+        (App (App (App (Func Interact) (Ident Galaxy)) (Func Nil))
+             (App (App (Func Cons) (Number 0)) (Number 0))
         )
   putStrLn $ "-----\nResult: " <> show result
 
