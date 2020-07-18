@@ -62,7 +62,7 @@ data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Intege
 type GameState = [Value]
 
 demodulateResponse :: String -> Maybe GameResponse
-demodulateResponse  :: fromValue . demodulateValue
+demodulateResponse = fromValue . demodulateValue
 
 class FromValue a where
   fromValue :: Value -> Maybe a
