@@ -19,7 +19,7 @@ main = catch (
         putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++show  playerKey)
 
         Right result <- join server playerKey
-        Just state <- demodulateResponse result
+        let Just state = demodulateResponse result
         putStrLn $ "Join:    " <> show state
         combat server playerKey state
 
@@ -32,12 +32,12 @@ combat :: String -> Integer -> GameResponse -> IO ()
 combat _      _         (GameResponse Done    _       _ ) = putStrLn "Game Over!"
 combat server playerKey (GameResponse Waiting unknown state) = do
     Right result <- start server playerKey (1,2,3,4)
-    Just state <- demodulateResponse result
+    let Just state = demodulateResponse result
     putStrLn $ "Start:   " <> show state
     combat server playerKey state
 combat server playerKey (GameResponse Running unkown state) = do
     Right result <- doNothing server playerKey
-    Just state <- demodulateResponse result
+    let Just state = demodulateResponse result
     putStrLn $ "Nothing: " <> show state
     combat server playerKey state
 
