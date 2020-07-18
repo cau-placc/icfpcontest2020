@@ -142,7 +142,7 @@ tryReduce IsNil (x:t) = do
    _           -> tryReduce F t
 tryReduce Interact (x2,x4,x3:t) = tryReduce F38 (x2: App (App x2 x4) x3:t)
 tryReduce Modem (x0:t) = tryReduce Dem ([app Mod [x0]:t])
-tryReduce MultipleDraw (x0:t) = tryReduce IsNil ([x0, Func Nil, app Cons [app Draw [app Car [l]], app MultipleDraw [app Cdr [l]]]] : t)
+tryReduce MultipleDraw (x0:t) = tryReduce IsNil ([x0, Func Nil, app Cons [app Draw [app Car [x0]], app MultipleDraw [app Cdr [x0]]]] : t)
 tryReduce Dem [x] = do
   x' <- (runExpr >=> asModulated) x
   stringDemodulate x'
