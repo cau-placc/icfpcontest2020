@@ -47,7 +47,10 @@ modulateData (Pair h t) = do
   t' <- modulateData =<< runExpr t
   pure (True : True :  h' ++ t')
 modulateData (Int i   ) = pure $ modulate i
-modulateData e = throwError $ "expected Unit, Pair or Integer, got " ++ show e
+modulateData (Partial p) =
+  -- repack List
+  p' <- p (app S [app C [Func IsNil, Func Nil], app S [app B [Func Cons, Func Car], Func Cdr]]) -- \x -> isnil x then nil else cons (car x) (cdr x)
+  modulateData p'''
 
 runMIB :: MIB a -> Either String a
 runMIB = runIdentity . runExceptT . flip evalStateT Map.empty . unMIB -- TODO: use except
@@ -88,14 +91,7 @@ funcAsData Dec = partial1 $ \e -> Int . (\x -> x - 1) <$> (runExpr >=> asInt) e
 funcAsData Inc = partial1 $ \e -> Int . (+ 1) <$> (runExpr >=> asInt) e
 funcAsData Pwr2 =
   partial1 $ \e -> Int . (\x -> 2 ^ x) <$> (runExpr >=> asInt) e
-funcAsData IsNil = partial1 $ \p -> do
-  d <- runExpr p
-  case d of
-    Unit     -> funcAsData T
-    Pair _ _ -> funcAsData F
-    Int _    -> funcAsData F
-    -- Partial f -> f $ partial2 $ \_ _ -> funcAsData F -- TODO
-
+funcAsData IsNil = partial1 $ \l -> runExpr l (app K [app K [Func F]])
 funcAsData Lt = partial2 $ \l r -> do
   l' <- (runExpr >=> asInt) l
   r' <- (runExpr >=> asInt) r
