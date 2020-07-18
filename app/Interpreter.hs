@@ -126,8 +126,7 @@ funcAsData Dem          = partial1 $ \v -> do
   stringDemodulate modu
 funcAsData Mod          = partial1 $ \v -> do
   dat <- runExpr v
-  let modu = modulateData dat
-  pure $ Modulated modu
+  Modulated <$> modulateToString dat
 funcAsData func         = error $ show func
 
 alienInteract = partial3 $ \x2 x4 x3 ->  runExpr $
