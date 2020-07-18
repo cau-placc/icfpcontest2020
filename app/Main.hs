@@ -3,6 +3,8 @@ import           Network.HTTP.Simple
 import qualified Data.ByteString.Lazy.UTF8     as BLU
 import           Control.Exception
 
+import           Text.Parsec
+
 import AlienNetwork
 import Modulation
 
