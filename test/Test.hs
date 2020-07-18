@@ -19,7 +19,7 @@ main = do
   let code       = unlines $ lines galaxy
       Right prog = either (error . show) Right $ parseAlienProg code
       result     = runMIB $ loadProg prog >> runExpr
-        (app Interact [Ident Galaxy, list0, list1])
+        (app Interact [Ident Galaxy, emptyList, tuple0])
         >>= showData
   putStrLn $ "-----\nResult: " <> show result
 

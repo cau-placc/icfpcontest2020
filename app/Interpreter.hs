@@ -24,13 +24,20 @@ import Interpreter.Data
 showData :: Data -> MIB String
 showData = \case
   Int i     -> pure $ show i
-  Pair l r  -> do
-    l <- showData =<< runExpr l
-    r <- showData =<< runExpr r
-    pure $ "(" <> l <> ", " <> r <> ")"
-  Unit      -> pure $ "()"
   Pic l     -> pure $ "Pic(" <> show l <> ")"
-  Partial _ -> pure $ "Partial"
+  Modulated s -> pure $  "Modulated(" <> show s <> ")"
+  Part f p  -> do
+    res <- tryReduce f p
+    case res of
+      Part Nil [] -> pure "()"
+      Part Cons [x,y] -> do
+        l <- showData =<< runExpr x
+        r <- showData =<< runExpr y
+        pure $ "(" <> l <> ", " <> r <> ")"
+      Part f p    -> do
+        let l = fmap show p
+        pure $ "ap " <> show f <> foldl (\a b -> a ++ ' ':b ) "" l
+      o       -> showData o
 
 modulateToString :: Data -> MIB String
 modulateToString dat = map (\b -> if b then '1' else '0') <$> modulateData dat
@@ -41,16 +48,19 @@ stringDemodulate input = if all (\c -> c == '0' || c == '1') input
   else throwError $ "Demodulation Error: " <> input
 
 modulateData :: Data -> MIB [Bool]
-modulateData Unit       = pure $ [False, False]
-modulateData (Pair h t) = do
-  h' <- modulateData =<< runExpr h
-  t' <- modulateData =<< runExpr t
-  pure (True : True :  h' ++ t')
 modulateData (Int i   ) = pure $ modulate i
-modulateData (Partial p) = do
-  -- repack List
-  p' <- p (app S [app C [Func IsNil, Func Nil], app S [app B [Func Cons, Func Car], Func Cdr]]) -- \x -> isnil x then nil else cons (car x) (cdr x)
-  modulateData p'
+modulateData (Part p t)   = do
+  p' <- tryReduce p t
+  case p' of
+    Part Nil []     ->  pure [False,False]
+    Part Cons [x,y] -> do
+      h <- modulateData =<< runExpr x
+      t <- modulateData =<< runExpr y
+      pure $ h ++ t
+    e -> do
+      e' <- showData e
+      throwError $ "Expected Nil or Cons, got " <> e'
+
 
 runMIB :: MIB a -> Either String a
 runMIB = runIdentity . runExceptT . flip evalStateT Map.empty . unMIB -- TODO: use except
@@ -62,134 +72,147 @@ loadDecl :: AlienDecl -> MIB ()
 loadDecl (Decl ident expr) = modify $ Map.insert ident expr
 
 runExpr :: AlienExpr -> MIB Data
-runExpr (App l r    ) = withPartial l ($ r)
+runExpr (App l r    ) = (uncurry tryReduce) =<< foldApp l [r]
 runExpr (Number i   ) = pure $ Int i
 runExpr (Ident  name) = runExpr =<< gets (\env -> env Map.! name)
-runExpr (Func   name) = funcAsData name
+runExpr (Func   name) = pure $ Part name []
 
-funcAsData :: AlienFunc -> MIB Data
-funcAsData Nil  = pure Unit
-funcAsData Cons = partial2 $ \x xs -> pure $ Pair x xs
-funcAsData Add  = partial2
-  $ \l r -> (Int .: (+)) <$> (runExpr >=> asInt) l <*> (runExpr >=> asInt) r
-funcAsData Neg = partial1 $ \e -> Int . negate <$> (runExpr >=> asInt) e
-funcAsData Eq  = partial2 $ \l r -> do
-  l' <- (runExpr >=> asInt) l
-  r' <- (runExpr >=> asInt) r
-  ite $ l' == r'
-funcAsData K   = partial2 $ \x y -> runExpr x
-funcAsData S   = partial3 $ \x y z -> runExpr $ App (App x z) (App y z)
-funcAsData C   = partial3 $ \x y z -> runExpr $ App (App x z) y
-funcAsData B   = partial3 $ \x y z -> runExpr $ App x $ App y z
-funcAsData I   = partial1 $ \x -> runExpr x
-funcAsData T   = ite True
-funcAsData F   = ite False
-funcAsData IF0 = partial1 $ \z -> do
-  z' <- (runExpr >=> asInt) z
-  ite $ z' == 0
-funcAsData Dec = partial1 $ \e -> Int . (\x -> x - 1) <$> (runExpr >=> asInt) e
-funcAsData Inc = partial1 $ \e -> Int . (+ 1) <$> (runExpr >=> asInt) e
-funcAsData Pwr2 =
-  partial1 $ \e -> Int . (\x -> 2 ^ x) <$> (runExpr >=> asInt) e
-funcAsData IsNil = partial1 $ \l -> runExpr $ App l $app K [app K [Func F]]
-funcAsData Lt = partial2 $ \l r -> do
-  l' <- (runExpr >=> asInt) l
-  r' <- (runExpr >=> asInt) r
-  ite $ l' < r'
--- TODO ap car x2 = ap x2 t
-funcAsData Car = partial1 $ \x -> do
-  (h, _) <- (runExpr >=> asPair) x
-  pure $ h
--- TODO ap cdr x2 = ap x2 f
-funcAsData Cdr = partial1 $ \x -> do
-  (_, t) <- (runExpr >=> asPair) x
-  pure $ t
-funcAsData Mul = partial2 $ \l r -> do
-  l' <- (runExpr >=> asInt) l
-  r' <- (runExpr >=> asInt) r
-  pure $ Int $ l' + r'
-funcAsData Div = partial2 $ \l r -> do
-  l' <- (runExpr >=> asInt) l
-  r' <- (runExpr >=> asInt) r
-  pure $ Int $ l' `div` r'
-funcAsData Interact     = alienInteract
-funcAsData Modem        = modem
-funcAsData F38          = f38
-funcAsData MultipleDraw = multidraw
-funcAsData Draw         = draw
-funcAsData Dem          = partial1 $ \v -> do
-  modu <- (runExpr >=> asModulated) v
-  stringDemodulate modu
-funcAsData Mod          = partial1 $ \v -> do
-  dat <- runExpr v
-  Modulated <$> modulateToString dat
-funcAsData func         = error $ show func
+foldApp :: AlienExpr -> [AlienExpr] -> MIB (AlienFunc, [AlienExpr])
+foldApp l rs  = case l of
+    App nl r -> foldApp nl $ r:rs
+    Number i -> throwError $ "Unexpected Number"
+    Ident  n -> do
+        e <- gets (\env -> env Map.! n)
+        foldApp e rs
+    Func   f -> pure (f, rs)
 
-alienInteract = partial3 $ \x2 x4 x3 ->  runExpr $
-  app F38 [x2, App (App x2 x4) x3]
+continue :: AlienExpr -> [AlienExpr] -> MIB Data
+continue x [] = runExpr x
+continue x t  = (uncurry tryReduce) =<< foldApp x t
 
-f38 = partial2 $ \x2 x0 ->
-  runExpr $
-  app IF0 [ app Car [x0]
-          , toExprList [app Modem [app Car [app Cdr [x0]]], app MultipleDraw [app Car [app Cdr [app Cdr [x0]]]]]
-          , app Interact [x2, app Modem [app Car [app Cdr [x0]]], app Send [app Car [app Cdr [app Cdr [x0]]]]]]
+tryReduce :: AlienFunc  -> [AlienExpr] -> MIB Data
+tryReduce Nil  (x:t)          = tryReduce T t
+tryReduce Neg  [x]            = Int . negate <$> (runExpr >=> asInt) x
+tryReduce Cons (x: y: z: t)   = continue z (x:y:t)
+tryReduce K (x:y:t)           = continue x t
+tryReduce S (x:y:z:t)         = continue x (z : App y z : t)
+tryReduce C (x:y:z:t)         = continue x (z:y:t)
+tryReduce B (x:y:z:t)         = continue x (App y z:t)
+tryReduce I (x:t)             = continue x t
+tryReduce T (t:_: r)          = continue t r
+tryReduce F (_:f: r)          = continue f r
+tryReduce Car (x:t)           = continue x (Func T: t)
+tryReduce Cdr (x:t)           = continue x (Func F: t)
+tryReduce Add  [x, y] = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  pure $ Int $ x' + y'
+tryReduce Minus  [x, y] = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  pure $ Int $ x' - y'
+tryReduce Mul  [x, y] = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  pure $ Int $ x' * y'
+tryReduce Div  [x, y] = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  pure $  Int $ x' `div` y'
+tryReduce Eq (x:y:t) = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  tryReduce (if x' == y' then  T else F) t
+tryReduce Lt (x:y:t) = do
+  x' <- (runExpr >=> asInt) x
+  y' <- (runExpr >=> asInt) y
+  tryReduce (if x' < y' then  T else F) t
+tryReduce IF0 (x:t) = do
+  x' <- (runExpr >=> asInt) x
+  tryReduce (if x' == 0 then T else F) t
+tryReduce Dec [x] = do
+  x' <- (runExpr >=> asInt) x
+  pure $ Int $ x' - 1
+tryReduce Inc [x] = do
+  x' <- (runExpr >=> asInt) x
+  pure $ Int $ x' + 1
+tryReduce Pwr2 [x] = do
+  x' <- (runExpr >=> asInt) x
+  pure $ Int $ 2 ^ x'
+tryReduce IsNil (x:t) = do
+  x' <- runExpr x
+  case x' of
+   Part Nil [] -> tryReduce T t
+   _           -> tryReduce F t
+tryReduce Interact (x2:x4:x3:t) = tryReduce F38 (x2: App (App x2 x4) x3:t)
+tryReduce Modem (x0:t) = tryReduce Dem (app Mod [x0]:t)
+tryReduce MultipleDraw (x0:t) = tryReduce IsNil (x0: Func Nil: (app Cons [app Draw [app Car [x0]], app MultipleDraw [app Cdr [x0]]]) : t)
+tryReduce Dem [x] = do
+  x' <- (runExpr >=> asModulated) x
+  stringDemodulate x'
+tryReduce Mod [x] = do 
+  x' <- runExpr x
+  Modulated <$> modulateToString x'
+tryReduce Draw [v] = do
+  e <- runExpr v
+  l <- asList e
+  lp <- mapM asPair l
+  lpi <- mapM (\(f, s) -> (,) <$> asInt f <*> asInt s) lp
+  pure $ Pic lpi
+tryReduce Send [_] = undefined
+tryReduce F38 (x2:x0:t) = tryReduce IF0
+            (  app Car [x0]
+            : toExprList [app Modem [app Car [app Cdr [x0]]], app MultipleDraw [app Car [app Cdr [app Cdr [x0]]]]]
+            : (app Interact [x2, app Modem [app Car [app Cdr [x0]]], app Send [app Car [app Cdr [app Cdr [x0]]]]])
+            : t
+            )
 
-modem = partial1 $ \x0 -> runExpr $ app Dem [app Mod [x0]]
-
-multidraw = partial1 $ \l ->
-  runExpr $ app IsNil [l , Func Nil, app Cons [app Draw [app Car [l]], app MultipleDraw [app Cdr [l]]]]
-
-draw = partial1 $ \v -> do
-  l <-
-    mapM (\(f, s) -> (,) <$> asInt f <*> asInt s)
-    =<< mapM asPair
-    =<< asList
-    =<< runExpr v
-  pure $ Pic l
+-- can't reduce at the moment
+tryReduce f p   = pure $ Part f p
 
 toExprList :: [AlienExpr] -> AlienExpr
 toExprList []      = Func Nil
 toExprList (h : t) = app Cons [h, toExprList t]
 
-
-ite :: Bool -> MIB Data
-ite cond = partial2 $ \t f -> runExpr $ if cond then t else f
-
-partial1 :: (AlienExpr -> MIB Data) -> MIB Data
-partial1 = pure . Partial
-
-partial2 :: (AlienExpr -> AlienExpr -> MIB Data) -> MIB Data
-partial2 k = pure $ Partial $ \x -> pure $ Partial $ \y -> k x y
-
-partial3 :: (AlienExpr -> AlienExpr -> AlienExpr -> MIB Data) -> MIB Data
-partial3 k =
-  pure $ Partial $ \x -> pure $ Partial $ \y -> pure $ Partial $ \z -> k x y z
-
-withPartial :: AlienExpr -> ((AlienExpr -> MIB Data) -> MIB Data) -> MIB Data
-withPartial expr k = runExpr expr >>= \case
-  Partial f -> k f
-  Unit      -> funcAsData T
-  Pair l r  -> partial1 $ \x -> runExpr $ App (App x l) r
-  e         -> throwError $ "expected function, got " <> show e <> "\nExpr: " <> show expr
-
 asInt :: Data -> MIB Integer
 asInt = \case
   Int i -> pure i
-  _     -> throwError "expected integer"
+  Part f p -> do
+    res <- tryReduce f p
+    case res of
+            Int i -> pure i
+            e     -> do
+              e' <- showData e
+              throwError $ "expected integer, got " <> e'
+  e     -> do
+      e' <- showData e
+      throwError $ "expected integer, got " <> e'
 
 asPair :: Data -> MIB (Data, Data)
 asPair = \case
-  Pair x y -> (,) <$> runExpr x <*> runExpr y
+  Part Cons [x,y] ->
+    (,) <$> runExpr x <*> runExpr y
+  Part f    p     -> do
+    res <- tryReduce f p
+    case res of
+      Part Cons [x,y]   ->
+          (,) <$> runExpr x <*> runExpr y
+      e                 -> throwError $ "expected pair, got" <> show e
   e        -> throwError $ "expected pair, got" <> show e
+
+asList :: Data -> MIB [Data]
+asList = \case
+  Part Nil [] -> pure []
+  Part Cons [x,y] -> (:) <$> runExpr x <*> (asList =<< runExpr y)
+  Part f p -> do
+    res <- tryReduce f p
+    case res of
+        Part Nil [] -> pure []
+        Part Cons [x,y] -> (:) <$> runExpr x <*> (asList =<< runExpr y)
+        e        -> throwError $ "expected unit or pair, got" <> show e
+  e        -> throwError $ "expected unit or pair, got" <> show e
 
 asModulated :: Data -> MIB String
 asModulated = \case
   Modulated m -> pure m
   _           -> throwError "Expected Modulated Data"
-
-asList :: Data -> MIB [Data]
-asList = \case
-  Unit     -> pure []
-  Pair x y -> (:) <$> runExpr x <*> (asList =<< runExpr y)
-  _        -> throwError "expected unit or pair"
-
