@@ -48,12 +48,19 @@ funcAsData Neg = partial1 $ \e -> Int . negate <$> (runExpr >=> asInt) e
 funcAsData Eq  = partial2 $ \l r -> do
   l' <- (runExpr >=> asInt) l
   r' <- (runExpr >=> asInt) r
-  partial2 $ \t f -> runExpr $ if l' == r' then t else f
+  ite $ l' == r' 
 funcAsData K    = partial2 $ \x y -> runExpr x
 funcAsData S    = partial3 $ \x y z -> runExpr $ App (App x z) (App y z)
 funcAsData C    = partial3 $ \x y z -> runExpr $ App (App x z) y
 funcAsData B    = partial3 $ \x y z -> runExpr $ App x $ App y z
+funcAsData Lt   = partial2 $ \l r -> do
+  l' <- (runExpr >=> asInt) l
+  r' <- (runExpr >=> asInt) r
+  ite $ l' < r'
 funcAsData func = error $ show func
+
+ite :: Bool -> MIB Data
+ite cond = partial2 $ \t f -> runExpr $ if cond then t else f
 
 partial1 :: (AlienExpr -> MIB Data) -> MIB Data
 partial1 = pure . Partial
