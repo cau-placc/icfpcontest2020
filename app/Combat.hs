@@ -29,7 +29,7 @@ init connection@(Connection server playerKey api) = catch (
         let ex' = case  api of
                       Just apiKey -> replace apiKey "<REDACTED>" $ show ex
                       Nothing -> show ex
-          putStrLn $ "Unexpected server response:\n" <> ex'
+        putStrLn $ "Unexpected server response:\n" <> ex'
 
 
 combat :: Connection -> GameResponse -> IO ()
