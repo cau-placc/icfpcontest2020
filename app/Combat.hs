@@ -16,7 +16,7 @@ import           Debug.Trace
 data Connection = Connection String Integer (Maybe String)
 
 init :: Connection -> IO ()
-init connection@(Connection server playerKey _) = catch (
+init connection@(Connection server playerKey api) = catch (
       do
         putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++show  playerKey)
         state <- performAction "Join:     " $ join connection
@@ -24,7 +24,10 @@ init connection@(Connection server playerKey _) = catch (
     ) handler
     where
       handler :: SomeException -> IO ()
-      handler ex = putStrLn $ "Unexpected server response:\n" ++ show ex
+      handler ex = if isJust api then
+          putStrLn $ "Unexpected server response:\n REDACTED"
+        else
+          putStrLn $ "Unexpected server response:\n" ++ show ex
 
 
 combat :: Connection -> GameResponse -> IO ()
