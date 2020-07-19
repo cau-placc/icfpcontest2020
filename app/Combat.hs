@@ -36,7 +36,7 @@ combat connection InvalidRequest = do
     state <-performAction "Nothing:  " $  doNothing connection
     combat connection state
 combat connection (GameResponse Waiting unknown state) = do
-    state <- performAction "Start:    " $ start connection ShipConfig{fuel=300,x2=10,x3=10,x4=2}
+    state <- performAction "Start:    " $ start connection ShipConfig{fuel=300,x2=4,x3=10,x4=2}
     case state of
         InvalidRequest -> pure ()
         _              -> combat connection state
