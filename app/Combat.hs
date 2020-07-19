@@ -113,7 +113,7 @@ createCommandFor ourrole tick allShips
               ]
             else
               [ Accelerate idt (Vector accX accY)
-              , Fork       idt [toValue $ ShipConfig 150 2 5 1] -- Nil and ShipConfig appear to be valid parameters, thou neither appeared to have an effect, a number and nothing cause InvalidRequest
+              , Fork       idt (ShipConfig 150 2 5 1) -- TODO base ship config parameter based on our remaining config as they will be taken from us
               ]
   | otherwise       = []
   where

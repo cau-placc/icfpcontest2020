@@ -2,13 +2,15 @@ module Combat.Data where
 
 import           Debug.Trace
 
-
-data Status = Waiting |  Running | Done deriving Show
+data Status = Waiting
+            | Running
+            | Done
+            deriving Show
 
 data SendCommand  = Accelerate  ShipId Vector
                   | Detonate    ShipId
                   | Shoot       ShipId Vector Integer
-                  | Fork        ShipId [Value] -- the parameters if any of fork are unknown
+                  | Fork        ShipId ShipConfig
                   deriving Show
 
 data ReceivedCommand = Accelerated Vector
@@ -16,12 +18,19 @@ data ReceivedCommand = Accelerated Vector
                      | Other Value
                      deriving Show
 
-data GameResponse = InvalidRequest | GameResponse Status Unknown (Maybe GameState) deriving Show
-data Role = Attack | Defence deriving (Show, Eq)
+data Role = Attack
+          | Defence
+          deriving (Show, Eq)
+
+data GameResponse = InvalidRequest
+                  | GameResponse Status Unknown (Maybe GameState)
+                  deriving Show
+
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
-data Tick = Tick Integer deriving Show
+
 data Vector = Vector Integer Integer deriving Show
 
+data Tick     = Tick     Integer deriving Show
 data ShipId   = ShipId   Integer  deriving Show
 data Position = Position Vector   deriving Show
 data Velocity = Velocity Vector   deriving Show
@@ -178,10 +187,10 @@ instance ToValue Vector where
   toValue (Vector x y) = Pair (toValue x) $ toValue y
 
 instance ToValue SendCommand where
-  toValue (Accelerate shipId vector   ) = toValue (0::Integer, shipId, vector)
-  toValue (Detonate   shipId          ) = toValue (1::Integer, shipId)
-  toValue (Shoot      shipId target x3) = traceShowId $ toValue (2::Integer, shipId, target, x3)
-  toValue (Fork       shipId params   ) = toValue (toValue (3::Integer) : toValue shipId : params )
+  toValue (Accelerate shipId vector     ) = toValue (0::Integer, shipId, vector)
+  toValue (Detonate   shipId            ) = toValue (1::Integer, shipId)
+  toValue (Shoot      shipId target x3  ) = traceShowId $ toValue (2::Integer, shipId, target, x3)
+  toValue (Fork       shipId shipConfig ) = toValue (3::Integer , shipId , shipConfig)
 
 
 instance ToValue ShipConfig where
