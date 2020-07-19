@@ -212,6 +212,8 @@ instance ToValue Commands where
   toValue (Detonate   shipId          ) = toValue (1::Integer, shipId)
   toValue (Shoot      shipId target x3) = toValue (2::Integer, shipId, target, x3)
 
+instance ToValue ShipId where
+  toValue (ShipId i) = toValue i
 
 instance FromValue Commands where
   fromValue v = do
