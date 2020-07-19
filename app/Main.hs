@@ -75,12 +75,14 @@ createCommandFor ourrole _allShips
   | otherwise       = []
   where
     (accX, accY) = wantedPos - predictedPos
-    wantedPos    = (x, y)
-    predictedPos = (x,y) + gravOffset + (xd, yd)
-    gravOffset = case compare (abs x) (abs y) of
+    wantedPos    = (x, y) + rotate gravOffset
+    predictedPos = (x, y) + gravOffset + (xd, yd)
+    gravOffset@(gx, gy) = case compare (abs x) (abs y) of
         EQ -> (- signum x, - signum y)
         LT -> (0         , - signum y)
         GT -> (- signum x, 0         )
+
+    rotate (x, y) = (-x, y)
 
 instance (Num a, Num b) => Num (a, b) where
   (x1, y1) + (x2, y2) = (x1 + x2, y1 + y2)
