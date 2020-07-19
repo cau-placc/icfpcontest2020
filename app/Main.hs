@@ -62,12 +62,12 @@ data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target
 data GameResponse = InvalidRequest | GameResponse Status Unknown (Maybe GameState) deriving Show
 data Role = Attack | Defence deriving Show
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
-data Tick = Tick Integer
+data Tick = Tick Integer deriving Show
 data Vector = Vector Integer Integer deriving Show
 
-data ShipId = ShipId Integer
-data Position = Position Vector
-data Velocity = Velocity Vector
+data ShipId = ShipId Integer    deriving Show
+data Position = Position Vector deriving Show
+data Velocity = Velocity Vector deriving Show
 type Target = Value
 
 data ShipState = ShipState Role ShipId Position Velocity Value Value Value Value
