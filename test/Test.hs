@@ -26,7 +26,7 @@ data CreateResponse = CreateResponse Integer Integer
 
 instance FromValue CreateResponse where
   fromValue v = do
-      (1, [((0, attackKey), (1, defenceKey))]) <- fromValue v
+      (Num 1, [((Num 0, attackKey), (Num 1, defenceKey))]) <- fromValue v
       pure $ CreateResponse attackKey defenceKey
 {-
 galaxyFile = "galaxy.txt"
