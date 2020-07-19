@@ -91,11 +91,11 @@ accelerate connection shipId vector = command connection [Accelerate shipId vect
 createCommandFor :: Role -> Tick -> [(ShipState, [ReceivedCommand])] -> (ShipState, [ReceivedCommand]) -> [SendCommand]
 createCommandFor ourrole tick allShips
   (ShipState role idt (Position (Vector x y))
-                      (Velocity (Vector xd yd)) ShipConfig{x4 = x4} x2 x3 x4, _)
+                      (Velocity (Vector xd yd)) ShipConfig{x4 = s4} x2 x3 x4, _)
   | ourrole == role =
     trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos ++
            "Shot at: "   ++ show (tpx, tpy)) $
-            if x4 <= 1 then
+            if s4 <= 1 then
               [ Accelerate idt (Vector accX accY)
               , Shoot      idt (Vector tpx  tpy ) 5
               ]
