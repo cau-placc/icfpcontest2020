@@ -139,13 +139,13 @@ instance (FromValue a) => FromValue (Maybe a) where
 
 instance FromValue Value where
   fromValue = pure
-  
-  
+
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
---------------------------------------------------------------------------------  
-  
-  
+--------------------------------------------------------------------------------
+
+
 class ToValue a where
   toValue :: a -> Value
 
@@ -198,7 +198,7 @@ instance Show Value where
   show Nil          = "nil"
   show (Pair l r)   = case r of
     Nil -> "[" <> show l <> "]"
-    Num i -> "(" <> show i <> ")"
+    Num i -> "(" <> show l <> ", " <> show i <> ")"
     p@(Pair _ _) -> let
         t = show p
       in
