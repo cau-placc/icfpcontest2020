@@ -30,6 +30,11 @@ main = catch (
 
 combat :: String -> Integer -> GameResponse -> IO ()
 combat _      _         (GameResponse Done    _       _ ) = putStrLn "Game Over!"
+combat server playerKey InvalidRequest = do
+    Right result <- doNothing server playerKey
+    let Just state = demodulateResponse result
+    putStrLn $ "Nothing:  " <> show state
+    combat server playerKey state
 combat server playerKey (GameResponse Waiting unknown state) = do
     Right result <- start server playerKey (1,2,3,4)
     let Just state = demodulateResponse result
@@ -38,7 +43,6 @@ combat server playerKey (GameResponse Waiting unknown state) = do
 combat server playerKey (GameResponse Running unknown state) = do
     let Unknown _ role _ _ _ = unknown
     Right result <- accelerate server playerKey (case role of Attack -> 1 ; Defence -> 0) (21,42)
-    putStrLn $ show $ demodulateValue result
     let Just state = demodulateResponse result
     putStrLn $ "Accelerate: " <> show state
     combat server playerKey state
@@ -55,7 +59,7 @@ showDemodulated = show . demodulateValue
 type ShipConfiguration = (Integer,Integer,Integer,Integer)
 data Status = Waiting |  Running | Done deriving Show
 data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value deriving Show
-data GameResponse = GameResponse Status Unknown (Maybe GameState) deriving Show
+data GameResponse = InvalidRequest | GameResponse Status Unknown (Maybe GameState) deriving Show
 data Role = Attack | Defence deriving Show
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
 
@@ -79,6 +83,7 @@ instance FromValue Integer where
 instance FromValue GameResponse where
   fromValue (Pair (Num 1) (Pair status (Pair unknown (Pair gameState Nil))) ) = do
       GameResponse <$> fromValue status <*> fromValue unknown <*> fromValue gameState
+  fromValue (Pair (Num 0) Nil) = pure InvalidRequest
   fromValue _ = Nothing
 
 instance FromValue Status where
