@@ -35,9 +35,9 @@ init connection@(Connection server playerKey api) = catch (
 
 replace :: String -> String -> String -> String
 replace pat rep []  = []
-replace pat rep hay@(h:t) = case stripPrefix pat of
-                            Nothing -> h : replace pat rep t
-                            Just rem -> rep <> replace pat rep $ drop (length pat) hay
+replace pat rep hay@(h:t) = case stripPrefix pat hay of
+                              Nothing -> h : replace pat rep t
+                              Just rem -> rep <> replace pat rep rem
 
 combat :: Connection -> GameResponse -> IO ()
 combat _  (GameResponse Done    _       _ ) = putStrLn "Game Over!"
