@@ -74,7 +74,7 @@ doNothing s p = command s p []
 accelerate :: String -> Integer -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
 accelerate server playerKey shipId vector = command server playerKey [Accelerate shipId vector]
 
-createCommandFor :: Role -> Tick -> [(ShipState, [Commands])] -> (ShipState, [Commands]) -> [Commands]
+createCommandFor :: Role -> Tick -> [(ShipState, [SendCommand])] -> (ShipState, [SendCommand]) -> [SendCommand]
 createCommandFor ourrole tick allShips
   (ShipState role idt (Position (Vector x y))
                       (Velocity (Vector xd yd)) _ _ _ _, _)
@@ -103,7 +103,7 @@ getGravOffestFor (x,y) = case compare (abs x) (abs y) of
 rotate :: (Integer, Integer) -> (Integer, Integer)
 rotate (x, y) = (y, -x)
 
-getOtherShip :: Role -> [(ShipState, [Commands])] -> (ShipState, [Commands])
+getOtherShip :: Role -> [(ShipState, [SendCommand])] -> (ShipState, [SendCommand])
 getOtherShip _ [] = error "Ded."
 getOtherShip ourrole (x@(ShipState role _ _ _ _ _ _ _, _):xs)
   | role /= ourrole = x
@@ -117,7 +117,7 @@ instance (Num a, Num b) => Num (a, b) where
   negate (x, y) = (-x, -y)
   fromInteger n = error "????????"
 
-command :: String -> Integer -> [Commands] -> IO (Either StatusCode ResponseBody)
+command :: String -> Integer -> [SendCommand] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
       body = modulateValue $ toValue [Num 4, Num playerKey, toValue commands]
     in
@@ -131,21 +131,29 @@ demodulateResponse = fromValue . demodulateValue
 
 type ShipConfiguration = (Integer,Integer,Integer,Integer)
 data Status = Waiting |  Running | Done deriving Show
-data Commands = Accelerate ShipId Vector
-              | Detonate ShipId
-              | Shoot ShipId Vector Integer deriving Show
+
+data SendCommand  = Accelerate ShipId Vector
+                  | Detonate ShipId
+                  | Shoot ShipId Vector Integer
+                  deriving Show
+
+data ReceivedCommand = Accelerated Vector
+                     | Fired Vector Integer Integer Integer
+                     | Other Value
+                     deriving Show
+
 data GameResponse = InvalidRequest | GameResponse Status Unknown (Maybe GameState) deriving Show
 data Role = Attack | Defence deriving (Show, Eq)
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
 data Tick = Tick Integer deriving Show
 data Vector = Vector Integer Integer deriving Show
 
-data ShipId = ShipId Integer    deriving Show
-data Position = Position Vector deriving Show
-data Velocity = Velocity Vector deriving Show
+data ShipId   = ShipId   Integer  deriving Show
+data Position = Position Vector   deriving Show
+data Velocity = Velocity Vector   deriving Show
 
-data ShipState = ShipState Role ShipId Position Velocity Value Value Value Value deriving Show
-data GameState = GameState Tick Value [(ShipState, [Commands])] deriving Show
+data ShipState = ShipState Role ShipId Position Velocity Value Value Value Value  deriving Show
+data GameState = GameState Tick Value [(ShipState, [ReceiveCommand])]             deriving Show
 
 class FromValue a where
   fromValue :: Value -> Maybe a
@@ -220,6 +228,23 @@ instance (FromValue a, FromValue b, FromValue c, FromValue d) => FromValue (a,b,
   fromValue v | Just [a,b,c,d] <- fromValue v = (,,,) <$> fromValue a <*> fromValue b <*> fromValue c <*> fromValue d
   fromValue _ = Nothing
 
+instance FromValue SendCommand where
+  fromValue v = do
+    list <- fromValue v
+    case list of
+      [Num 0, vector    ] -> Accelerate (ShipId (-1)) <$> fromValue vector
+      [Num 1            ] -> pure $ Detonate $ ShipId (-1)
+      [Num 2, target, x3] -> Shoot (ShipId (-1)) <$> fromValue target <*> fromValue x3
+      _                   -> Nothing
+
+
+instance FromValue ReceiveCommand where
+  fromValue v = do
+      case list of
+          [Num 0, vector            ] -> Accelerated <$> fromValue vector
+          [Num 2, target, x1, x2, x3] -> Fired <$> fromValue target <*> fromValue x1 <*> fromValue x2 <*> fromValue x3
+          _                           -> Other v
+
 instance (FromValue a) => FromValue (Maybe a) where
   fromValue v = pure $ fromValue v
 
@@ -266,7 +291,7 @@ instance ToValue Integer where
 instance ToValue Vector where
   toValue (Vector x y) = Pair (toValue x) $ toValue y
 
-instance ToValue Commands where
+instance ToValue SendCommand where
   toValue (Accelerate shipId vector   ) = toValue (0::Integer, shipId, vector)
   toValue (Detonate   shipId          ) = toValue (1::Integer, shipId)
   toValue (Shoot      shipId target x3) = traceShowId $ toValue (2::Integer, shipId, target, x3)
@@ -274,16 +299,7 @@ instance ToValue Commands where
 instance ToValue ShipId where
   toValue (ShipId i) = toValue i
 
-instance FromValue Commands where
-  fromValue v = do
-    list <- fromValue v
-    case list of
-      [Num 0, vector    ] -> Accelerate (ShipId (-1)) <$> fromValue vector
-      [Num 1            ] -> pure $ Detonate $ ShipId (-1)
-      [Num 2, target, x3] -> Shoot (ShipId (-1)) <$> fromValue target <*> fromValue x3
-      _                   -> Nothing
-
--- data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value
+-- data SendCommand = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value
 
 data Value =  Nil | Pair Value Value | Num Integer
 
