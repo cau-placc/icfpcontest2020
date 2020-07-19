@@ -118,7 +118,7 @@ createCommandFor ourrole tick allShips
   | otherwise       = []
   where
     (accX, accY) = limit $ predictedPos - wantedPos -- acceleration may at most be one in each ncomponent therefor the limit
-    dist = (round . sqrt . fromIntegral (x^2 + y^2)) :: Integer
+    dist = (round $ sqrt $ fromIntegral ((x^2) + (y^2))) :: Integer
     wantedPos    = (x, y) + (scale (((dist + 10) `div` 10) ) $ rotate (getGravOffestFor (x, y)))
     predictedPos = (x, y) + getGravOffestFor (x, y) + (xd, yd)
     (ShipState _ _ (Position (Vector tx ty))
