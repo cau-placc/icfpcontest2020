@@ -8,6 +8,7 @@ import           Data.Maybe
 
 import AlienNetwork
 import Modulation
+import           Debug.Trace
 
 
 main :: IO ()
@@ -71,7 +72,9 @@ createCommandFor :: Role -> [(ShipState, [Commands])] -> (ShipState, [Commands])
 createCommandFor ourrole _allShips
   (ShipState role idt (Position (Vector x y))
                       (Velocity (Vector xd yd)) _ _ _ _, _)
-  | ourrole == role = [Accelerate idt (Vector accX accY)]
+  | ourrole == role =
+    trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos)
+    [Accelerate idt (Vector accX accY)]
   | otherwise       = []
   where
     (accX, accY) = predictedPos - wantedPos
