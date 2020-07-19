@@ -335,6 +335,10 @@ instance ToValue SendCommand where
   toValue (Shoot      shipId target x3) = traceShowId $ toValue (2::Integer, shipId, target, x3)
   toValue (Fork       shipId params   ) = toValue (toValue (3::Integer) : toValue shipId : params )
 
+
+instance ToValue ShipConfig where
+  toValue ShipConfig{fuel = fuel, x2 = x2, x3 = x3, x4 = x4} = toValue (fuel,x2,x3,x4)
+
 instance ToValue ShipId where
   toValue (ShipId i) = toValue i
 
