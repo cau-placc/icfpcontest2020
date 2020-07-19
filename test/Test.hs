@@ -1,9 +1,11 @@
+import           Control.Concurrent
+
 import           Parser hiding (app)
 import           Syntax
 import           Interpreter
 import           Interpreter.Data
-import           Control.Concurrent
 import           Combat
+import           AlienNetwork
 
 main :: IO ()
 main = do
