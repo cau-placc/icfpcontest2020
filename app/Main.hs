@@ -37,7 +37,7 @@ combat server playerKey InvalidRequest = do
     putStrLn $ "Nothing:  " <> show state
     combat server playerKey state
 combat server playerKey (GameResponse Waiting unknown state) = do
-    Right result <- start server playerKey (158,0,24,1)
+    Right result <- start server playerKey (158,2,24,2)
     let Just state = demodulateResponse result
     putStrLn $ "Start:    " <> show state
     combat server playerKey state
@@ -269,7 +269,7 @@ instance ToValue Vector where
 instance ToValue Commands where
   toValue (Accelerate shipId vector   ) = toValue (0::Integer, shipId, vector)
   toValue (Detonate   shipId          ) = toValue (1::Integer, shipId)
-  toValue (Shoot      shipId target x3) = toValue (2::Integer, shipId, target, x3)
+  toValue (Shoot      shipId target x3) = traceShowId $ toValue (2::Integer, shipId, target, x3)
 
 instance ToValue ShipId where
   toValue (ShipId i) = toValue i
