@@ -101,12 +101,15 @@ createCommandFor ourrole tick allShips
   | otherwise       = []
   where
     (accX, accY) = predictedPos - wantedPos
-    wantedPos    = (x, y) + rotate (getGravOffestFor (x, y))
+    wantedPos    = scale 2 $ (x, y) + rotate (getGravOffestFor (x, y))
     predictedPos = (x, y) + getGravOffestFor (x, y) + (xd, yd)
     (ShipState _ _ (Position (Vector tx ty))
                    (Velocity (Vector txd tyd)) _ _ _ _, _) =
       getOtherShip role allShips
     (tpx, tpy) = (tx, ty) + getGravOffestFor (tx, ty) + (txd, tyd)
+
+scale :: Integer -> (Integer, Integer) -> (Integer , Integer)
+scale r (x,y) = (x*r, y*r)
 
 getGravOffestFor :: (Integer, Integer) -> (Integer, Integer)
 getGravOffestFor (x,y) = case compare (abs x) (abs y) of
