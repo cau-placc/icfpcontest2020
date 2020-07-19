@@ -80,9 +80,9 @@ createCommandFor ourrole tick allShips
                       (Velocity (Vector xd yd)) _ _ _ _, _)
   | ourrole == role =
     trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos ++
-           "Shot at: "   ++ show (shX, shY))
+           "Shot at: "   ++ show (tpx, tpy))
     [ Accelerate idt (Vector accX accY)
-    , Shoot      idt (Vector shX  shY ) 64
+    , Shoot      idt (Vector tpx  tpy ) 64
     ]
   | otherwise       = []
   where
@@ -92,8 +92,7 @@ createCommandFor ourrole tick allShips
     (ShipState _ _ (Position (Vector tx ty))
                    (Velocity (Vector txd tyd)) _ _ _ _, _) =
       getOtherShip role allShips
-    theirPredictedPos = (tx, ty) + getGravOffestFor (tx, ty) + (txd, tyd)
-    (shX, shY) = theirPredictedPos - (x, y)
+    (tpx, tpy) = (tx, ty) + getGravOffestFor (tx, ty) + (txd, tyd)
 
 getGravOffestFor :: (Integer, Integer) -> (Integer, Integer)
 getGravOffestFor (x,y) = case compare (abs x) (abs y) of
@@ -107,7 +106,7 @@ rotate (x, y) = (y, -x)
 getOtherShip :: Role -> [(ShipState, [Commands])] -> (ShipState, [Commands])
 getOtherShip _ [] = error "Ded."
 getOtherShip ourrole (x@(ShipState role _ _ _ _ _ _ _, _):xs)
-  | role == ourrole = x
+  | role /= ourrole = x
   | otherwise       = getOtherShip ourrole xs
 
 instance (Num a, Num b) => Num (a, b) where
