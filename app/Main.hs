@@ -168,9 +168,9 @@ instance ToValue Integer where
   toValue i = Num i
 
 instance ToValue Commands where
-  toValue (Accelerate shipId vector   ) = toValue (0, shipId, vector)
-  toValue (Detonate   shipId          ) = toValue (1, shipId)
-  toValue (Shoot      shipId target x3) = toValue (2, shipId, target, x3)
+  toValue (Accelerate shipId vector   ) = toValue (0::Integer, shipId, vector)
+  toValue (Detonate   shipId          ) = toValue (1::Integer, shipId)
+  toValue (Shoot      shipId target x3) = toValue (2::Integer, shipId, target, x3)
 
 
 -- data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value
