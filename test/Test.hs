@@ -3,16 +3,16 @@ import           Syntax
 import           Interpreter
 import           Interpreter.Data
 import           Control.Concurrent
-import qualified Main
+import           Combat
 
 main :: IO ()
 main = do
   let apiKey = "e5a6755f75374b6fbb621ae3d46e6f36"
       server = "https://icfpc2020-api.testkontur.ru/"
   (attack, defence) <- create server apiKey
-  forkIO $ do 
-      Main.init attack
-  Main.init defence
+  forkIO $ do
+      Combat.init attack
+  Combat.init defence
 
 create :: String -> String -> IO (Connection, Connection)
 create server apiKey = do
