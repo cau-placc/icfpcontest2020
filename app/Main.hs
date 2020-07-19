@@ -102,6 +102,7 @@ instance FromValue ShipState where
       ShipState <$> fromValue role <*> fromValue id <*> fromValue position <*> fromValue velocity <*> fromValue x4 <*> fromValue x5 <*> fromValue x6 <*> fromValue x7
   fromValue _ = Nothing
 
+
 instance FromValue GameState where
   fromValue v | Just [tick, x3, commands] <- fromValue v =
       GameState <$> fromValue tick <*> fromValue x3 <*> fromValue commands
@@ -210,6 +211,16 @@ instance ToValue Commands where
   toValue (Accelerate shipId vector   ) = toValue (0::Integer, shipId, vector)
   toValue (Detonate   shipId          ) = toValue (1::Integer, shipId)
   toValue (Shoot      shipId target x3) = toValue (2::Integer, shipId, target, x3)
+
+
+instance FromValue Commands where
+  fromValue v = do
+    list <- fromValue v
+    case list of
+      [Num 0, vector    ] -> Accelerate <$> ShipId -1 <*> fromValue vector
+      [Num 1            ] -> pure $ Detonate $ ShipId -1
+      [Num 2, target, x3] -> (Shoot $ ShipId -1) <$> fromValue target <*> fromValue x3
+      _                   -> Nothing
 
 
 -- data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value
