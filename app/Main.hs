@@ -174,7 +174,7 @@ instance ToValue Integer where
   toValue i = Num i
 
 instance ToValue Vector where
-  toValue (Vector x y) = Pair $ toValue x $ toValue y
+  toValue (Vector x y) = Pair (toValue x) $ toValue y
 
 instance ToValue Commands where
   toValue (Accelerate shipId vector   ) = toValue (0::Integer, shipId, vector)
