@@ -38,6 +38,7 @@ combat server playerKey (GameResponse Waiting unknown state) = do
 combat server playerKey (GameResponse Running unknown state) = do
     let Unknown _ role _ _ _ = unknown
     Right result <- accelerate server playerKey (case role of Attack -> 1 ; Defence -> 0) (21,42)
+    putStrLn $ show $ demodulateValue result
     let Just state = demodulateResponse result
     putStrLn $ "Accelerate: " <> show state
     combat server playerKey state
