@@ -244,7 +244,7 @@ instance FromValue ReceivedCommand where
       case list of
           [Num 0, vector            ] -> Accelerated <$> fromValue vector
           [Num 2, target, x1, x2, x3] -> Fired <$> fromValue target <*> fromValue x1 <*> fromValue x2 <*> fromValue x3
-          _                           -> Other v
+          _                           -> pure $ Other v
 
 instance (FromValue a) => FromValue (Maybe a) where
   fromValue v = pure $ fromValue v
