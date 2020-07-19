@@ -42,7 +42,7 @@ combat server playerKey (GameResponse Waiting unknown state) = do
     combat server playerKey state
 combat server playerKey (GameResponse Running unknown state) = do
     let Unknown _ role _ _ _ = unknown
-    Right result <- accelerate server playerKey (case role of Attack -> 1 ; Defence -> 0) (1,1)
+    Right result <- accelerate server playerKey (case role of Attack -> 1 ; Defence -> 0) (Vector 1 1)
     let Just state = demodulateResponse result
     putStrLn $ "Accelerate: " <> show state
     combat server playerKey state
@@ -62,9 +62,9 @@ data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target
 data GameResponse = InvalidRequest | GameResponse Status Unknown (Maybe GameState) deriving Show
 data Role = Attack | Defence deriving Show
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
+data Vector = Vector Integer Integer
 
 type ShipId = Integer
-type Vector = (Integer, Integer)
 type Target = Value
 
 
@@ -172,6 +172,9 @@ instance (ToValue a, ToValue b, ToValue c, ToValue d) => ToValue (a,b,c,d) where
 
 instance ToValue Integer where
   toValue i = Num i
+  
+instance ToValue Vector where
+  toValue (Vector x y) = Pair $ toValue x $ toValue y
 
 instance ToValue Commands where
   toValue (Accelerate shipId vector   ) = toValue (0::Integer, shipId, vector)
