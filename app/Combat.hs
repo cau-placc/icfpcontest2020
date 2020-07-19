@@ -113,7 +113,7 @@ createCommandFor ourrole tick allShips
               ]
             else
               [ Accelerate idt (Vector accX accY)
-              , Fork       idt [Num 1]
+              , Fork       idt [Num 150, Num 2, Num 5, Num 1]
               ]
   | otherwise       = []
   where
