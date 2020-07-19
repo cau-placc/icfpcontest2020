@@ -4,6 +4,7 @@ import           System.Environment
 import           Network.HTTP.Simple
 import qualified Data.ByteString.Lazy.UTF8     as BLU
 import           Control.Exception
+import           Data.List (stripPrefix)
 
 import           Text.Parsec
 import           Data.Maybe
