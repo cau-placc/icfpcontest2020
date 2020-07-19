@@ -114,6 +114,9 @@ instance FromValue Vector where
 instance FromValue Position where
   fromValue v = Position <$> fromValue v
 
+instance FromValue ShipId where
+  fromValue v = ShipId <$> fromValue v
+
 instance FromValue Velocity where
   fromValue v = Velocity <$> fromValue v
 
