@@ -42,7 +42,7 @@ combat server playerKey (GameResponse Waiting unknown state) = do
     combat server playerKey state
 combat server playerKey (GameResponse Running unknown state) = do
     let Unknown _ role _ _ _ = unknown
-    Right result <- accelerate server playerKey (case role of Attack -> 1 ; Defence -> 0) (Vector 1 1)
+    Right result <- accelerate server playerKey (case role of Attack -> ShipId 1 ; Defence -> ShipId 0) (Vector 1 1)
     let Just state = demodulateResponse result
     putStrLn $ "Accelerate: " <> show state
     combat server playerKey state
@@ -53,8 +53,29 @@ join server playerKey = let
     in
       post server "/aliens/send" body
 
+start :: String -> Integer -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
+start server playerKey (n1,n2,n3,n4) = let
+      body = modulateValue $ toValue [Num 3, Num playerKey, toValue [Num n1, Num n2, Num n3, Num n4]]
+    in
+      post server "/aliens/send" body
+
+doNothing :: String -> Integer ->  IO (Either StatusCode ResponseBody)
+doNothing s p = command s p []
+
+accelerate :: String -> Integer -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
+accelerate server playerKey shipId vector = command server playerKey [Accelerate shipId vector]
+
+command :: String -> Integer -> [Commands] -> IO (Either StatusCode ResponseBody)
+command server playerKey commands = let
+      body = modulateValue $ toValue [Num 4, Num playerKey, toValue commands]
+    in
+      post server "/aliens/send" body
+
 showDemodulated :: String -> String
 showDemodulated = show . demodulateValue
+
+demodulateResponse :: String -> Maybe GameResponse
+demodulateResponse = fromValue . demodulateValue
 
 type ShipConfiguration = (Integer,Integer,Integer,Integer)
 data Status = Waiting |  Running | Done deriving Show
@@ -72,9 +93,6 @@ type Target = Value
 
 data ShipState = ShipState Role ShipId Position Velocity Value Value Value Value deriving Show
 data GameState = GameState Tick Value [(ShipState, [Commands])] deriving Show
-
-demodulateResponse :: String -> Maybe GameResponse
-demodulateResponse = fromValue . demodulateValue
 
 class FromValue a where
   fromValue :: Value -> Maybe a
@@ -148,11 +166,6 @@ instance (FromValue a) => FromValue (Maybe a) where
 instance FromValue Value where
   fromValue = pure
 
-start :: String -> Integer -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
-start server playerKey (n1,n2,n3,n4) = let
-      body = modulateValue $ toValue [Num 3, Num playerKey, toValue [Num n1, Num n2, Num n3, Num n4]]
-    in
-      post server "/aliens/send" body
 
 showAlienList :: [String] -> String
 showAlienList [] = "nil"
@@ -161,18 +174,6 @@ showAlienList (h:t) = let
     (_:t') = showAlienList t
   in
     "(" <> h <> ", " <> t'
-
-doNothing :: String -> Integer ->  IO (Either StatusCode ResponseBody)
-doNothing s p = command s p []
-
-accelerate :: String -> Integer -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
-accelerate server playerKey shipId vector = command server playerKey [Accelerate shipId vector]
-
-command :: String -> Integer -> [Commands] -> IO (Either StatusCode ResponseBody)
-command server playerKey commands = let
-      body = modulateValue $ toValue [Num 4, Num playerKey, toValue commands]
-    in
-      post server "/aliens/send" body
 
 class ToValue a where
   toValue :: a -> Value
