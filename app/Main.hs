@@ -81,7 +81,7 @@ createCommandFor ourrole tick allShips
   | ourrole == role =
     trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos)
     [ Accelerate idt (Vector accX accY)
-    , Shoot      idt (Vector shX  shY ) (Num 0)
+    , Shoot      idt (Vector shX  shY ) 64 67 4
     ]
   | otherwise       = []
   where
@@ -131,7 +131,9 @@ demodulateResponse = fromValue . demodulateValue
 
 type ShipConfiguration = (Integer,Integer,Integer,Integer)
 data Status = Waiting |  Running | Done deriving Show
-data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Vector Value deriving Show
+data Commands = Accelerate ShipId Vector
+              | Detonate ShipId
+              | Shoot ShipId Vector Integer Integer Integer deriving Show
 data GameResponse = InvalidRequest | GameResponse Status Unknown (Maybe GameState) deriving Show
 data Role = Attack | Defence deriving (Show, Eq)
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
@@ -252,6 +254,12 @@ instance (ToValue a, ToValue b, ToValue c) => ToValue (a,b,c) where
 instance (ToValue a, ToValue b, ToValue c, ToValue d) => ToValue (a,b,c,d) where
   toValue (a,b,c,d) = toValue [toValue a, toValue b, toValue c, toValue d]
 
+instance (ToValue a, ToValue b, ToValue c, ToValue d, ToValue e) => ToValue (a,b,c,d,e) where
+  toValue (a,b,c,d,e) = toValue [toValue a, toValue b, toValue c, toValue d, toValue e]
+
+instance (ToValue a, ToValue b, ToValue c, ToValue d, ToValue e, ToValue f) => ToValue (a,b,c,d,e,f) where
+  toValue (a,b,c,d,e,f) = toValue [toValue a, toValue b, toValue c, toValue d, toValue e, toValue f]
+
 instance ToValue Integer where
   toValue = Num
 
@@ -259,9 +267,9 @@ instance ToValue Vector where
   toValue (Vector x y) = Pair (toValue x) $ toValue y
 
 instance ToValue Commands where
-  toValue (Accelerate shipId vector   ) = toValue (0::Integer, shipId, vector)
-  toValue (Detonate   shipId          ) = toValue (1::Integer, shipId)
-  toValue (Shoot      shipId target x3) = toValue (2::Integer, shipId, target, x3)
+  toValue (Accelerate shipId vector         ) = toValue (0::Integer, shipId, vector)
+  toValue (Detonate   shipId                ) = toValue (1::Integer, shipId)
+  toValue (Shoot      shipId target x3 x4 x5) = toValue (2::Integer, shipId, target, x3, x4, x5)
 
 instance ToValue ShipId where
   toValue (ShipId i) = toValue i
@@ -270,10 +278,10 @@ instance FromValue Commands where
   fromValue v = do
     list <- fromValue v
     case list of
-      [Num 0, vector    ] -> Accelerate (ShipId (-1)) <$> fromValue vector
-      [Num 1            ] -> pure $ Detonate $ ShipId (-1)
-      [Num 2, target, x3] -> Shoot (ShipId (-1)) <$> fromValue target <*> fromValue x3
-      _                   -> Nothing
+      [Num 0, vector            ] -> Accelerate (ShipId (-1)) <$> fromValue vector
+      [Num 1                    ] -> pure $ Detonate $ ShipId (-1)
+      [Num 2, target, x3, x4, x5] -> Shoot (ShipId (-1)) <$> fromValue target <*> fromValue x3 <*> fromValue x4 <*> fromValue x5
+      _                           -> Nothing
 
 -- data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value
 

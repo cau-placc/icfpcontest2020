@@ -150,7 +150,7 @@ tryReduce MultipleDraw (x0:t) = tryReduce IsNil (x0: Func Nil: (app Cons [app Dr
 tryReduce Dem [x] = do
   x' <- (runExpr >=> asModulated) x
   stringDemodulate x'
-tryReduce Mod [x] = do 
+tryReduce Mod [x] = do
   x' <- runExpr x
   Modulated <$> modulateToString x'
 tryReduce Draw [v] = do
