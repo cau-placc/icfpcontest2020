@@ -4,7 +4,6 @@ import           System.Environment
 import           Network.HTTP.Simple
 import qualified Data.ByteString.Lazy.UTF8     as BLU
 import           Control.Exception
-import           Data.List.Utils (replace)
 
 import           Text.Parsec
 import           Data.Maybe
@@ -29,9 +28,15 @@ init connection@(Connection server playerKey api) = catch (
         let ex' = case  api of
                       Just apiKey -> replace apiKey "<REDACTED>" $ show ex
                       Nothing -> show ex
-        in 
+        in
           putStrLn $ "Unexpected server response:\n" <> ex'
 
+
+replace :: String -> String -> String -> String
+replace pat rep []  = []
+replace pat rep hay@(h:t) = case stripPrefix pat of
+                            Nothing -> h : replace pat rep t
+                            Just rem -> rep <> replace pat rep $ drop (length pat) hay
 
 combat :: Connection -> GameResponse -> IO ()
 combat _  (GameResponse Done    _       _ ) = putStrLn "Game Over!"
