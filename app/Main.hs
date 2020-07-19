@@ -80,12 +80,13 @@ class FromValue a where
   fromValue :: Value -> Maybe a
 
 instance FromValue ShipState where
-  fromValue v | Just [role, id, position, velocity, x4, x5, x6, x7] <- 
+  fromValue v | Just [role, id, position, velocity, x4, x5, x6, x7] <- fromValue v = 
       ShipState <$> fromValue role <*> fromValue id <*> fromValue position <*> fromValue velocity <*> fromValue x4 <*> fromValue x5 <*> fromValue x6 <*> fromValue x7
   fromValue _ = Nothing
 
 instance FromValue GameState where
-  fromValue v | Just [tick, x3, commands] <- GameState <$> fromValue tick <*> fromValue x3 <*> fromValue commands
+  fromValue v | Just [tick, x3, commands] <- fromValue v = 
+      GameState <$> fromValue tick <*> fromValue x3 <*> fromValue commands
   fromValue _ = Nothing
 
 instance FromValue Vector where
