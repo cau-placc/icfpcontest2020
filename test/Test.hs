@@ -18,7 +18,7 @@ main = do
 
 create :: String -> String -> IO (Connection, Connection)
 create server apiKey = do
-    let createRequest = modulateValue $ toValue [0::Integer,1]
+    let createRequest = modulateValue $ toValue [1::Integer,0]
     putStrLn $"Create Request: " <> createRequest
     Right response <- post server ("/aliens/send?apiKey=" <> apiKey) createRequest
     let Just (CreateResponse attack defence) = fromValue $ demodulateValue response
