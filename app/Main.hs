@@ -62,7 +62,7 @@ data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target
 data GameResponse = InvalidRequest | GameResponse Status Unknown (Maybe GameState) deriving Show
 data Role = Attack | Defence deriving Show
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
-data Vector = Vector Integer Integer
+data Vector = Vector Integer Integer deriving Show
 
 type ShipId = Integer
 type Target = Value
@@ -172,7 +172,7 @@ instance (ToValue a, ToValue b, ToValue c, ToValue d) => ToValue (a,b,c,d) where
 
 instance ToValue Integer where
   toValue i = Num i
-  
+
 instance ToValue Vector where
   toValue (Vector x y) = Pair $ toValue x $ toValue y
 
