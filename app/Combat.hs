@@ -107,7 +107,7 @@ createCommandFor ourrole tick allShips
   | ourrole == role =
     trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos ++
            "Shot at: "   ++ show (tpx, tpy)) $
-            if s4 <= 1 || ourrole == Attacker then -- don't only fork when attacking
+            if s4 <= 1 || ourrole == Attacker then -- don't only fork when attacking, to conserve fuel in defence to evade and hover
               [ Accelerate idt (Vector accX accY)
               , Shoot      idt (Vector tpx  tpy ) 5
               ]
