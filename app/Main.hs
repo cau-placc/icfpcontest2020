@@ -1,4 +1,3 @@
-{-# LANGUAGE TupleSections #-}
 import           System.Environment
 import           Network.HTTP.Simple
 import qualified Data.ByteString.Lazy.UTF8     as BLU
@@ -14,7 +13,7 @@ main :: IO ()
 main = catch (
     do
         args <- getArgs
-        let server = args!!0
+        let server = head args
             playerKey = read $ args!!1
         putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++show  playerKey)
 
@@ -129,7 +128,7 @@ instance FromValue Integer where
   fromValue _       = Nothing
 
 instance FromValue GameResponse where
-  fromValue (Pair (Num 1) (Pair status (Pair unknown (Pair gameState Nil))) ) = do
+  fromValue (Pair (Num 1) (Pair status (Pair unknown (Pair gameState Nil))) ) =
       GameResponse <$> fromValue status <*> fromValue unknown <*> fromValue gameState
   fromValue (Pair (Num 0) Nil) = pure InvalidRequest
   fromValue _ = Nothing
@@ -202,7 +201,7 @@ instance (ToValue a, ToValue b, ToValue c, ToValue d) => ToValue (a,b,c,d) where
   toValue (a,b,c,d) = toValue [toValue a, toValue b, toValue c, toValue d]
 
 instance ToValue Integer where
-  toValue i = Num i
+  toValue = Num
 
 instance ToValue Vector where
   toValue (Vector x y) = Pair (toValue x) $ toValue y
@@ -219,11 +218,10 @@ instance FromValue Commands where
   fromValue v = do
     list <- fromValue v
     case list of
-      [Num 0, vector    ] -> (Accelerate $ ShipId (-1)) <$> fromValue vector
+      [Num 0, vector    ] -> Accelerate (ShipId (-1)) <$> fromValue vector
       [Num 1            ] -> pure $ Detonate $ ShipId (-1)
-      [Num 2, target, x3] -> (Shoot $ ShipId (-1)) <$> fromValue target <*> fromValue x3
+      [Num 2, target, x3] -> Shoot (ShipId (-1)) <$> fromValue target <*> fromValue x3
       _                   -> Nothing
-
 
 -- data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value
 
@@ -246,10 +244,7 @@ modulateValue (Pair f s)  = "11" ++ modulateValue f ++ modulateValue s
 modulateValue (Num i)     = map (\x -> if x then '1' else '0') $ modulate i
 
 demodulateValue :: String -> Value
-demodulateValue string = let
-      binary = fmap (\c -> if c == '0' then False else True) string
-    in
-      fst $ demodulateV binary
+demodulateValue string = fst (demodulateV (fmap (/= '0') string))
   where
     demodulateV (False: False: res) = (Nil, res)
     demodulateV (True : True : res) = let
