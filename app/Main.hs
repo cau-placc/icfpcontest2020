@@ -74,7 +74,7 @@ doNothing s p = command s p []
 accelerate :: String -> Integer -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
 accelerate server playerKey shipId vector = command server playerKey [Accelerate shipId vector]
 
-createCommandFor :: Role -> Tick -> [(ShipState, [SendCommand])] -> (ShipState, [SendCommand]) -> [SendCommand]
+createCommandFor :: Role -> Tick -> [(ShipState, [ReceivedCommand])] -> (ShipState, [ReceivedCommand]) -> [SendCommand]
 createCommandFor ourrole tick allShips
   (ShipState role idt (Position (Vector x y))
                       (Velocity (Vector xd yd)) _ _ _ _, _)
@@ -103,7 +103,7 @@ getGravOffestFor (x,y) = case compare (abs x) (abs y) of
 rotate :: (Integer, Integer) -> (Integer, Integer)
 rotate (x, y) = (y, -x)
 
-getOtherShip :: Role -> [(ShipState, [SendCommand])] -> (ShipState, [SendCommand])
+getOtherShip :: Role -> [(ShipState, [ReceivedCommand])] -> (ShipState, [ReceivedCommand])
 getOtherShip _ [] = error "Ded."
 getOtherShip ourrole (x@(ShipState role _ _ _ _ _ _ _, _):xs)
   | role /= ourrole = x
