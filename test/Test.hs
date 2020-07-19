@@ -10,7 +10,7 @@ import           AlienNetwork
 main :: IO ()
 main = do
   let apiKey = "e5a6755f75374b6fbb621ae3d46e6f36"
-      server = "https://icfpc2020-api.testkontur.ru/"
+      server = "https://icfpc2020-api.testkontur.ru"
   (attack, defence) <- create server apiKey
   forkIO $ do
       Combat.init attack
