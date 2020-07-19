@@ -2,7 +2,31 @@ import           Parser hiding (app)
 import           Syntax
 import           Interpreter
 import           Interpreter.Data
+import           Control.Concurrent
+import qualified Main
 
+main :: IO ()
+main = do
+  let apiKey = "e5a6755f75374b6fbb621ae3d46e6f36"
+      server = "https://icfpc2020-api.testkontur.ru/"
+  (attack, defence) <- create server apiKey
+  forkIO $ do 
+      Main.init attack
+  Main.init defence
+
+create :: String -> String -> IO (Connection, Connection)
+create server apiKey = do
+    Right response <- post server ("/aliens/send?apiKey=" <> apiKey) $ toValue [0::Integer,1]
+    let CreateResponse attack defence = fromValue response
+    (Connection server attack $ Just apiKey, Connection server attack $ Just apiKey)
+
+data CreateResponse Integer Integer
+
+instance FromValue CreateResponse where
+  fromValue v = do
+      (1, [((0, attackKey), (1, defenceKey))]) <- fromValue v
+      pure $ CreateResponse attackKey defenceKey
+{-
 galaxyFile = "galaxy.txt"
 statelessFile = "stateless.txt"
 statefullFile = "statefull.txt"
@@ -22,4 +46,5 @@ main = do
         (app Interact [Ident Galaxy, emptyList, tuple0])
         >>= showData
   putStrLn $ "-----\nResult: " <> show result
+-}
 

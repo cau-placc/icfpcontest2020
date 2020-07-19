@@ -11,68 +11,84 @@ import Modulation
 import           Debug.Trace
 
 
+data Connection = Connection String Integer (Maybe String)
+
 main :: IO ()
-main = catch (
-    do
-        args <- getArgs
-        let server = head args
-            playerKey = read $ args!!1
+main = do
+    args <- getArgs
+    let server = head args
+        playerKey = read $ args!!1
+    Main.init $ Connection server playerKey Nothing
+
+init :: Connection -> IO ()
+init connection@(Connection server playerKey _) = catch (
+      do
         putStrLn ("ServerUrl: " ++ server ++ "; PlayerKey: " ++show  playerKey)
-
-        Right result <- join server playerKey
-        let Just state = demodulateResponse result
-        putStrLn $ "Join:     " <> show state
-        combat server playerKey state
-
+        state <- performAction "Join:     " $ join connection
+        combat connection state
     ) handler
     where
-        handler :: SomeException -> IO ()
-        handler ex = putStrLn $ "Unexpected server response:\n" ++ show ex
+      handler :: SomeException -> IO ()
+      handler ex = putStrLn $ "Unexpected server response:\n" ++ show ex
 
-combat :: String -> Integer -> GameResponse -> IO ()
-combat _      _         (GameResponse Done    _       _ ) = putStrLn "Game Over!"
-combat server playerKey InvalidRequest = do
-    Right result <- doNothing server playerKey
-    let Just state = demodulateResponse result
-    putStrLn $ "Nothing:  " <> show state
-    combat server playerKey state
-combat server playerKey (GameResponse Waiting unknown state) = do
-    Right result <- start server playerKey (156,4,10,1)
-    let Just state = demodulateResponse result
-    putStrLn $ "Start:    " <> show state
-    combat server playerKey state
-combat server playerKey (GameResponse Running unknown (Just state)) = do
-    let Unknown _ role _ _ _ = unknown
-    let GameState tick _ ships = state
-    let ourCommands = concatMap (createCommandFor role tick ships) ships
-    Right result <- command server playerKey ourCommands
-    let Just state = demodulateResponse result
-    putStrLn $ "Accelerate: " <> show state
-    combat server playerKey state
-combat server playerKey (GameResponse Running unknown Nothing) = do
-    let Unknown _ role _ _ _ = unknown
-    Right result <- command server playerKey []
-    let Just state = demodulateResponse result
-    putStrLn $ "Accelerate: " <> show state
-    combat server playerKey state
 
-join :: String ->  Integer -> IO (Either StatusCode ResponseBody)
-join server playerKey = let
+combat :: Connection -> GameResponse -> IO ()
+combat _  (GameResponse Done    _       _ ) = putStrLn "Game Over!"
+combat connection InvalidRequest = do
+    state <-performAction "Nothing:  " $  doNothing connection
+    combat connection state
+combat connection (GameResponse Waiting unknown state) = do
+    state <- performAction "Start:    " $ start connection (156,4,10,1)
+    combat connection state
+combat connection (GameResponse Running unknown (Just state)) = do
+    let Unknown _ role _ _ _ = unknown
+        GameState tick _ ships = state
+        ourCommands = concatMap (createCommandFor role tick ships) ships
+    state <- performAction "Commands:   " $ command connection ourCommands
+    combat connection state
+combat connection (GameResponse Running unknown Nothing) = do
+    let Unknown _ role _ _ _ = unknown
+    state <- performAction "Accelerate: " $ command connection []
+    combat connection state
+
+performAction :: String -> IO (Either StatusCode ResponseBody) -> IO GameResponse
+performAction name action = do
+      Right result <- action
+      let Just state = demodulateResponse result
+      putStrLn $ name <> show state
+      pure state
+
+join :: Connection -> IO (Either StatusCode ResponseBody)
+join connection@(Connection _ playerKey _) = let
       body = modulateValue $ toValue [Num 2, Num playerKey, Nil]
     in
-      post server "/aliens/send" body
+      postAlien connection body
 
-start :: String -> Integer -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
-start server playerKey (n1,n2,n3,n4) = let
+start :: Connection -> ShipConfiguration-> IO (Either StatusCode ResponseBody)
+start connection@(Connection _ playerKey _) (n1,n2,n3,n4) = let
       body = modulateValue $ toValue [Num 3, Num playerKey, toValue [Num n1, Num n2, Num n3, Num n4]]
     in
-      post server "/aliens/send" body
+      postAlien connection body
 
-doNothing :: String -> Integer ->  IO (Either StatusCode ResponseBody)
-doNothing s p = command s p []
+command :: Connection -> [SendCommand] -> IO (Either StatusCode ResponseBody)
+command connection@(Connection _ playerKey _) commands = let
+      body = modulateValue $ toValue [Num 4, Num playerKey, toValue commands]
+    in
+      postAlien connection body
 
-accelerate :: String -> Integer -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
-accelerate server playerKey shipId vector = command server playerKey [Accelerate shipId vector]
+postAlien :: Connection -> String -> IO (Either StatusCode ResponseBody)
+postAlien (Connection server playerKey maybeKey) body = let
+    querry = case maybeKey of
+        Nothing -> ""
+        Just k -> "?apiKey=" <> k
+  in
+    post server ("/aliens/send" <> querry) body
+
+doNothing :: Connection ->  IO (Either StatusCode ResponseBody)
+doNothing connection = command connection []
+
+accelerate :: Connection -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
+accelerate connection shipId vector = command connection [Accelerate shipId vector]
 
 createCommandFor :: Role -> Tick -> [(ShipState, [ReceivedCommand])] -> (ShipState, [ReceivedCommand]) -> [SendCommand]
 createCommandFor ourrole tick allShips
@@ -117,11 +133,6 @@ instance (Num a, Num b) => Num (a, b) where
   negate (x, y) = (-x, -y)
   fromInteger n = error "????????"
 
-command :: String -> Integer -> [SendCommand] -> IO (Either StatusCode ResponseBody)
-command server playerKey commands = let
-      body = modulateValue $ toValue [Num 4, Num playerKey, toValue commands]
-    in
-      post server "/aliens/send" body
 
 showDemodulated :: String -> String
 showDemodulated = show . demodulateValue
