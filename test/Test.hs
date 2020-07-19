@@ -20,7 +20,7 @@ create server apiKey = do
     let CreateResponse attack defence = fromValue response
     (Connection server attack $ Just apiKey, Connection server attack $ Just apiKey)
 
-data CreateResponse Integer Integer
+data CreateResponse = CreateResponse Integer Integer
 
 instance FromValue CreateResponse where
   fromValue v = do
