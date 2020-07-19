@@ -137,7 +137,7 @@ doNothing :: String -> Integer ->  IO (Either StatusCode ResponseBody)
 doNothing s p = command s p []
 
 accelerate :: String -> Integer -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
-accelerate server playerKey shipId vector = command s p [Accelerate shipId vector]
+accelerate server playerKey shipId vector = command server playerKey [Accelerate shipId vector]
 
 command :: String -> Integer -> [Commands] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
