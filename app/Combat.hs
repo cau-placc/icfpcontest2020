@@ -4,6 +4,7 @@ import           System.Environment
 import           Network.HTTP.Simple
 import qualified Data.ByteString.Lazy.UTF8     as BLU
 import           Control.Exception
+import           Data.List.Utils (replace)
 
 import           Text.Parsec
 import           Data.Maybe
@@ -24,10 +25,11 @@ init connection@(Connection server playerKey api) = catch (
     ) handler
     where
       handler :: SomeException -> IO ()
-      handler ex = if isJust api then
-          putStrLn $ "Unexpected server response:\n REDACTED"
-        else
-          putStrLn $ "Unexpected server response:\n" ++ show ex
+      handler ex =
+        let ex' = case  api of
+                      Just apiKey -> replace apiKey "<REDACTED>" $ show ex
+                      Nothing -> show ex
+          putStrLn $ "Unexpected server response:\n" <> ex'
 
 
 combat :: Connection -> GameResponse -> IO ()
