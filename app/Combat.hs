@@ -113,7 +113,7 @@ createCommandFor ourrole tick allShips
               ]
             else
               [ Accelerate idt (Vector accX accY)
-              , Fork       idt [toValue ShipConfig{fuel = 150,x2=5,x3=2,x4=1}]
+              , Fork       idt [Nil]
               ]
   | otherwise       = []
   where
