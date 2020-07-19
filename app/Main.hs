@@ -43,8 +43,8 @@ combat server playerKey (GameResponse Waiting unknown state) = do
     combat server playerKey state
 combat server playerKey (GameResponse Running unknown state) = do
     let Unknown _ role _ _ _ = unknown
-    let GameState _ _ ships = fromJust state
-    let ourCommands = concatMap (createCommandFor role ships) ships
+    let GameState tick _ ships = fromJust state
+    let ourCommands = concatMap (createCommandFor role tick ships) ships
     Right result <- command server playerKey ourCommands
     let Just state = demodulateResponse result
     putStrLn $ "Accelerate: " <> show state
@@ -68,24 +68,40 @@ doNothing s p = command s p []
 accelerate :: String -> Integer -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
 accelerate server playerKey shipId vector = command server playerKey [Accelerate shipId vector]
 
-createCommandFor :: Role -> [(ShipState, [Commands])] -> (ShipState, [Commands]) -> [Commands]
-createCommandFor ourrole _allShips
+createCommandFor :: Role -> Tick -> [(ShipState, [Commands])] -> (ShipState, [Commands]) -> [Commands]
+createCommandFor ourrole tick allShips
   (ShipState role idt (Position (Vector x y))
                       (Velocity (Vector xd yd)) _ _ _ _, _)
   | ourrole == role =
     trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos)
-    [Accelerate idt (Vector accX accY)]
+    [ Accelerate idt (Vector accX accY)
+    , Shoot      idt (Vector shX  shY ) Nil
+    ]
   | otherwise       = []
   where
     (accX, accY) = predictedPos - wantedPos
-    wantedPos    = (x, y) + rotate gravOffset
-    predictedPos = (x, y) + gravOffset + (xd, yd)
-    gravOffset@(gx, gy) = case compare (abs x) (abs y) of
-        EQ -> (- signum x, - signum y)
-        LT -> (0         , - signum y)
-        GT -> (- signum x, 0         )
+    wantedPos    = (x, y) + rotate (getGravOffestFor (x, y))
+    predictedPos = (x, y) + getGravOffestFor (x, y) + (xd, yd)
+    (ShipState _ _ (Position (Vector tx ty))
+                   (Velocity (Vector txd tyd)) _ _ _ _, _) =
+      getOtherShip role allShips
+    theirPredictedPos = (tx, ty) + getGravOffestFor (tx, ty) + (txd, tyd)
+    (shX, shY) = theirPredictedPos - (x, y)
 
-    rotate (x, y) = (y, -x)
+getGravOffestFor :: (Integer, Integer) -> (Integer, Integer)
+getGravOffestFor (x,y) = case compare (abs x) (abs y) of
+    EQ -> (- signum x, - signum y)
+    LT -> (0         , - signum y)
+    GT -> (- signum x, 0         )
+
+rotate :: (Integer, Integer) -> (Integer, Integer)
+rotate (x, y) = (y, -x)
+
+getOtherShip :: Role -> [(ShipState, [Commands])] -> (ShipState, [Commands])
+getOtherShip _ [] = error "Ded."
+getOtherShip ourrole (x@(ShipState role _ _ _ _ _ _ _, _):xs)
+  | role == ourrole = x
+  | otherwise       = getOtherShip ourrole xs
 
 instance (Num a, Num b) => Num (a, b) where
   (x1, y1) + (x2, y2) = (x1 + x2, y1 + y2)
@@ -109,7 +125,7 @@ demodulateResponse = fromValue . demodulateValue
 
 type ShipConfiguration = (Integer,Integer,Integer,Integer)
 data Status = Waiting |  Running | Done deriving Show
-data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value deriving Show
+data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Vector Value deriving Show
 data GameResponse = InvalidRequest | GameResponse Status Unknown (Maybe GameState) deriving Show
 data Role = Attack | Defence deriving (Show, Eq)
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
@@ -119,7 +135,6 @@ data Vector = Vector Integer Integer deriving Show
 data ShipId = ShipId Integer    deriving Show
 data Position = Position Vector deriving Show
 data Velocity = Velocity Vector deriving Show
-type Target = Value
 
 data ShipState = ShipState Role ShipId Position Velocity Value Value Value Value deriving Show
 data GameState = GameState Tick Value [(ShipState, [Commands])] deriving Show
