@@ -149,10 +149,10 @@ demodulateResponse = fromValue . demodulateValue
 
 data Status = Waiting |  Running | Done deriving Show
 
-data SendCommand  = Accelerate ShipId Vector
-                  | Detonate ShipId
-                  | Shoot ShipId Vector Integer
-                  | Fork [Value] -- the parameters if any of fork are unknown
+data SendCommand  = Accelerate  ShipId Vector
+                  | Detonate    ShipId
+                  | Shoot       ShipId Vector Integer
+                  | Fork        ShipId [Value] -- the parameters if any of fork are unknown
                   deriving Show
 
 data ReceivedCommand = Accelerated Vector
@@ -182,8 +182,8 @@ instance FromValue ShipState where
   fromValue v | Just [role, id, position, velocity, x4, x5, x6, x7] <- fromValue v =
       ShipState <$> fromValue role <*> fromValue id <*> fromValue position <*> fromValue velocity <*> fromValue x4 <*> fromValue x5 <*> fromValue x6 <*> fromValue x7
   fromValue _ = Nothing
-  
-  
+
+
 instance FromValue ShipConfig where
   fromValue v = do
         [fuel, x2, x3, x4] <- fromValue v
