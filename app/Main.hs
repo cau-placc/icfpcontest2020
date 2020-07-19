@@ -36,14 +36,14 @@ combat server playerKey InvalidRequest = do
     putStrLn $ "Nothing:  " <> show state
     combat server playerKey state
 combat server playerKey (GameResponse Waiting unknown state) = do
-    Right result <- start server playerKey (256,2,3,4)
+    Right result <- start server playerKey (256,0,16,1)
     let Just state = demodulateResponse result
     putStrLn $ "Start:    " <> show state
     combat server playerKey state
 combat server playerKey (GameResponse Running unknown state) = do
     let Unknown _ role _ _ _ = unknown
     let GameState _ _ ships = fromJust state
-    let ourCommands = mapMaybe (createCommandFor role) ships
+    let ourCommands = concatMap (createCommandFor role ships) ships
     Right result <- command server playerKey ourCommands
     let Just state = demodulateResponse result
     putStrLn $ "Accelerate: " <> show state
@@ -67,13 +67,28 @@ doNothing s p = command s p []
 accelerate :: String -> Integer -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
 accelerate server playerKey shipId vector = command server playerKey [Accelerate shipId vector]
 
-createCommandFor :: Role -> (ShipState, [Commands]) -> Maybe Commands
-createCommandFor ourrole (ShipState role idt (Position (Vector x y)) _ _ _ _ _, _)
-  | ourrole == role = case compare (abs x) (abs y) of
-      EQ -> Just (Accelerate idt (Vector (- signum x) (- signum y)))
-      LT -> Just (Accelerate idt (Vector 0 (- signum y)))
-      GT -> Just (Accelerate idt (Vector (- signum x) 0))
-  | otherwise       = Nothing
+createCommandFor :: Role -> [(ShipState, [Commands])] -> (ShipState, [Commands]) -> [Commands]
+createCommandFor ourrole _allShips
+  (ShipState role idt (Position (Vector x y))
+                      (Velocity (Vector xd yd)) _ _ _ _, _)
+  | ourrole == role = [Accelerate idt (Vector accX accY)]
+  | otherwise       = []
+  where
+    (accX, accY) = wantedPos - predictedPos
+    wantedPos    = (x, y)
+    predictedPos = (x,y) + gravOffset + (xd, yd)
+    gravOffset = case compare (abs x) (abs y) of
+        EQ -> (- signum x, - signum y)
+        LT -> (0         , - signum y)
+        GT -> (- signum x, 0         )
+
+instance (Num a, Num b) => Num (a, b) where
+  (x1, y1) + (x2, y2) = (x1 + x2, y1 + y2)
+  abs (x, y) = (abs x, abs y)
+  signum (x, y) = (signum x, signum y)
+  (x1, y1) * (x2, y2) = (x1 * x2, y1 * y2)
+  negate (x, y) = (-x, -y)
+  fromInteger n = error "????????"
 
 command :: String -> Integer -> [Commands] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
