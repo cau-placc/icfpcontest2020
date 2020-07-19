@@ -153,7 +153,7 @@ data Position = Position Vector   deriving Show
 data Velocity = Velocity Vector   deriving Show
 
 data ShipState = ShipState Role ShipId Position Velocity Value Value Value Value  deriving Show
-data GameState = GameState Tick Value [(ShipState, [ReceiveCommand])]             deriving Show
+data GameState = GameState Tick Value [(ShipState, [ReceivedCommand])]             deriving Show
 
 class FromValue a where
   fromValue :: Value -> Maybe a
@@ -238,7 +238,7 @@ instance FromValue SendCommand where
       _                   -> Nothing
 
 
-instance FromValue ReceiveCommand where
+instance FromValue ReceivedCommand where
   fromValue v = do
       case list of
           [Num 0, vector            ] -> Accelerated <$> fromValue vector
