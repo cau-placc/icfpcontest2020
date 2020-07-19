@@ -170,7 +170,7 @@ data ShipId   = ShipId   Integer  deriving Show
 data Position = Position Vector   deriving Show
 data Velocity = Velocity Vector   deriving Show
 
-data ShipConfig = ShipConfig { fuel::Integer, x2 :: Integer, x3::Integer, x4 :: Integer}
+data ShipConfig = ShipConfig { fuel::Integer, x2 :: Integer, x3::Integer, x4 :: Integer} deriving Show
 
 data ShipState = ShipState Role ShipId Position Velocity ShipConfig Value Value Value  deriving Show
 data GameState = GameState Tick Value [(ShipState, [ReceivedCommand])]                 deriving Show
