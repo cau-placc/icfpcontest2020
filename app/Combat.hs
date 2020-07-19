@@ -117,14 +117,16 @@ createCommandFor ourrole tick allShips
               ]
   | otherwise       = []
   where
-    (accX, accY) = predictedPos - wantedPos
-    wantedPos    = (x, y) + (rotate (getGravOffestFor (x, y)))
+    (accX, accY) = limit $ predictedPos - wantedPos -- acceleration may at most be one in each ncomponent therefor the limit
+    wantedPos    = (x, y) + (scale 2 $ rotate (getGravOffestFor (x, y)))
     predictedPos = (x, y) + getGravOffestFor (x, y) + (xd, yd)
     (ShipState _ _ (Position (Vector tx ty))
                    (Velocity (Vector txd tyd)) _ _ _ _, _) =
       getOtherShip role allShips
     (tpx, tpy) = (tx, ty) + getGravOffestFor (tx, ty) + (txd, tyd)
 
+limit :: (Integer, Integer) -> (Integer, Integer)
+limit (x,y) = (signum x, signum y)
 
 scale :: Integer -> (Integer, Integer) -> (Integer , Integer)
 scale r (x,y) = (x*r, y*r)
