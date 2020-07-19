@@ -36,7 +36,7 @@ combat server playerKey InvalidRequest = do
     putStrLn $ "Nothing:  " <> show state
     combat server playerKey state
 combat server playerKey (GameResponse Waiting unknown state) = do
-    Right result <- start server playerKey (1,2,3,4)
+    Right result <- start server playerKey (256,2,3,4)
     let Just state = demodulateResponse result
     putStrLn $ "Start:    " <> show state
     combat server playerKey state
