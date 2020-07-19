@@ -5,6 +5,7 @@ import           Syntax
 import           Interpreter
 import           Interpreter.Data
 import           Combat
+import           Combat.Data
 import           AlienNetwork
 
 main :: IO ()
