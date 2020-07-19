@@ -74,7 +74,7 @@ createCommandFor ourrole _allShips
   | ourrole == role = [Accelerate idt (Vector accX accY)]
   | otherwise       = []
   where
-    (accX, accY) = wantedPos - predictedPos
+    (accX, accY) = predictedPos - wantedPos
     wantedPos    = (x, y) + rotate gravOffset
     predictedPos = (x, y) + gravOffset + (xd, yd)
     gravOffset@(gx, gy) = case compare (abs x) (abs y) of
