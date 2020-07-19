@@ -23,7 +23,7 @@ create server apiKey = do
     Right response <- post server ("/aliens/send?apiKey=" <> apiKey) createRequest
     putStrLn $ show $ demodulateValue response
     let Just (CreateResponse attack defence) = fromValue $ demodulateValue response
-    pure $ (Connection server attack $ Just apiKey, Connection server attack $ Just apiKey)
+    pure $ (Connection server attack $ Just apiKey, Connection server defence $ Just apiKey)
 
 data CreateResponse = CreateResponse Integer Integer
 
