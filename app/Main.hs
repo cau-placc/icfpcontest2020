@@ -4,6 +4,7 @@ import qualified Data.ByteString.Lazy.UTF8     as BLU
 import           Control.Exception
 
 import           Text.Parsec
+import           Data.Maybe
 
 import AlienNetwork
 import Modulation
@@ -41,12 +42,14 @@ combat server playerKey (GameResponse Waiting unknown state) = do
     combat server playerKey state
 combat server playerKey (GameResponse Running unknown state) = do
     let Unknown _ role _ _ _ = unknown
-    Right result <- accelerate server playerKey (case role of Attack -> ShipId 1 ; Defence -> ShipId 0) (Vector 1 1)
+    let GameState _ _ ships = fromJust state
+    let ourCommands = mapMaybe (createCommandFor role) ships
+    Right result <- command server playerKey ourCommands
     let Just state = demodulateResponse result
     putStrLn $ "Accelerate: " <> show state
     combat server playerKey state
 
-join ::String ->  Integer -> IO (Either StatusCode ResponseBody)
+join :: String ->  Integer -> IO (Either StatusCode ResponseBody)
 join server playerKey = let
       body = modulateValue $ toValue [Num 2, Num playerKey, Nil]
     in
@@ -64,6 +67,14 @@ doNothing s p = command s p []
 accelerate :: String -> Integer -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
 accelerate server playerKey shipId vector = command server playerKey [Accelerate shipId vector]
 
+createCommandFor :: Role -> (ShipState, [Commands]) -> Maybe Commands
+createCommandFor ourrole (ShipState role idt (Position (Vector x y)) _ _ _ _ _, _)
+  | ourrole == role = case compare (abs x) (abs y) of
+      EQ -> Just (Accelerate idt (Vector (- signum x) (- signum y)))
+      LT -> Just (Accelerate idt (Vector 0 (- signum y)))
+      GT -> Just (Accelerate idt (Vector (- signum x) 0))
+  | otherwise       = Nothing
+
 command :: String -> Integer -> [Commands] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
       body = modulateValue $ toValue [Num 4, Num playerKey, toValue commands]
@@ -80,7 +91,7 @@ type ShipConfiguration = (Integer,Integer,Integer,Integer)
 data Status = Waiting |  Running | Done deriving Show
 data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value deriving Show
 data GameResponse = InvalidRequest | GameResponse Status Unknown (Maybe GameState) deriving Show
-data Role = Attack | Defence deriving Show
+data Role = Attack | Defence deriving (Show, Eq)
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
 data Tick = Tick Integer deriving Show
 data Vector = Vector Integer Integer deriving Show
