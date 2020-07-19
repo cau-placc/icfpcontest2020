@@ -20,7 +20,7 @@ main = catch (
 
         Right result <- join server playerKey
         let Just state = demodulateResponse result
-        putStrLn $ "Join:    " <> show state
+        putStrLn $ "Join:     " <> show state
         combat server playerKey state
 
     ) handler
@@ -33,12 +33,13 @@ combat _      _         (GameResponse Done    _       _ ) = putStrLn "Game Over!
 combat server playerKey (GameResponse Waiting unknown state) = do
     Right result <- start server playerKey (1,2,3,4)
     let Just state = demodulateResponse result
-    putStrLn $ "Start:   " <> show state
+    putStrLn $ "Start:    " <> show state
     combat server playerKey state
-combat server playerKey (GameResponse Running unkown state) = do
-    Right result <- doNothing server playerKey
+combat server playerKey (GameResponse Running unknown state) = do
+    let Unknown _ role _ _ _ = unknown
+    Right result <- accelerate server playerKey (case role of Attack -> 1 ; Defence -> 0) (21,42)
     let Just state = demodulateResponse result
-    putStrLn $ "Nothing: " <> show state
+    putStrLn $ "Accelerate: " <> show state
     combat server playerKey state
 
 join ::String ->  Integer -> IO (Either StatusCode ResponseBody)
@@ -51,12 +52,15 @@ showDemodulated :: String -> String
 showDemodulated = show . demodulateValue
 
 type ShipConfiguration = (Integer,Integer,Integer,Integer)
-type Commands = Value
-
 data Status = Waiting |  Running | Done deriving Show
+data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value deriving Show
 data GameResponse = GameResponse Status Unknown (Maybe GameState) deriving Show
 data Role = Attack | Defence deriving Show
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
+
+type ShipId = Integer
+type Vector = (Integer, Integer)
+type Target = Value
 
 
 type GameState = [Value]
@@ -132,6 +136,9 @@ showAlienList (h:t) = let
 doNothing :: String -> Integer ->  IO (Either StatusCode ResponseBody)
 doNothing s p = command s p []
 
+accelerate :: String -> Integer -> ShipId -> Vector -> IO (Either StatusCode ResponseBody)
+accelerate server playerKey shipId vector = command s p [Accelerate shipId vector]
+
 command :: String -> Integer -> [Commands] -> IO (Either StatusCode ResponseBody)
 command server playerKey commands = let
       body = modulateValue $ toValue [Num 4, Num playerKey, toValue commands]
@@ -148,17 +155,37 @@ instance (ToValue a) => ToValue [a] where
   toValue [] = Nil
   toValue (x:h) = Pair (toValue x) $ toValue h
 
+instance (ToValue a, ToValue b) => ToValue (a,b) where
+  toValue (a,b) = toValue [toValue a, toValue b]
+
+instance (ToValue a, ToValue b, ToValue c) => ToValue (a,b,c) where
+  toValue (a,b,c) = toValue [toValue a, toValue b, toValue c]
+
+instance (ToValue a, ToValue b, ToValue c, ToValue d) => ToValue (a,b,c,d) where
+  toValue (a,b,c,d) = toValue [toValue a, toValue b, toValue c, toValue d]
+
 instance ToValue Integer where
   toValue i = Num i
+
+instance ToValue Commands where
+  toValue (Accelerate shipId vector   ) = toValue (0, shipId, vector)
+  toValue (Detonate   shipId          ) = toValue (1, shipId)
+  toValue (Shoot      shipId target x3) = toValue (2, shipId, target, x3)
+
+
+-- data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target Value
 
 data Value =  Nil | Pair Value Value | Num Integer
 
 instance Show Value where
   show Nil          = "nil"
   show (Pair l r)   = case r of
-    Nil -> "(" <> show l <> ")"
+    Nil -> "[" <> show l <> "]"
     Num i -> "(" <> show i <> ")"
-    p@(Pair _ _) -> "(" <> show l <> ", " <> tail (show p)
+    p@(Pair _ _) -> let
+        t = show p
+      in
+        head t <> show l <> ", " <> tail t
   show (Num i) = show i
 
 modulateValue :: Value -> String
