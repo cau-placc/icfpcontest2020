@@ -113,7 +113,7 @@ createCommandFor ourrole tick allShips
               ]
             else
               [ Accelerate idt (Vector accX accY)
-              , Fork       idt [Num 150, Num 2, Num 5, Num 1]
+              , Fork       idt [to Value $ ShipConfig 150 2 5 1] -- Nil and ShipConfig appear to be valid parameters, thou neither appeared to have an effect, a number and nothing cause InvalidRequest
               ]
   | otherwise       = []
   where
