@@ -18,9 +18,9 @@ main = do
 
 create :: String -> String -> IO (Connection, Connection)
 create server apiKey = do
-    Right response <- post server ("/aliens/send?apiKey=" <> apiKey) $ toValue [0::Integer,1]
-    let CreateResponse attack defence = fromValue response
-    (Connection server attack $ Just apiKey, Connection server attack $ Just apiKey)
+    Right response <- post server ("/aliens/send?apiKey=" <> apiKey) $ modulateValue $ toValue [0::Integer,1]
+    let Just (CreateResponse attack defence) = fromValue $ demodulateValue response
+    pure $ (Connection server attack $ Just apiKey, Connection server attack $ Just apiKey)
 
 data CreateResponse = CreateResponse Integer Integer
 
