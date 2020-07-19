@@ -29,7 +29,8 @@ init connection@(Connection server playerKey api) = catch (
         let ex' = case  api of
                       Just apiKey -> replace apiKey "<REDACTED>" $ show ex
                       Nothing -> show ex
-        putStrLn $ "Unexpected server response:\n" <> ex'
+        in 
+          putStrLn $ "Unexpected server response:\n" <> ex'
 
 
 combat :: Connection -> GameResponse -> IO ()
@@ -105,7 +106,7 @@ createCommandFor ourrole tick allShips
               ]
             else
               [ Accelerate idt (Vector accX accY)
-              , Fork       idt []
+              , Fork       idt [toValue ShipConfig{fuel = 150,x2=5,x3=2,x4=1}]
               ]
   | otherwise       = []
   where
