@@ -82,7 +82,7 @@ createCommandFor ourrole _allShips
         LT -> (0         , - signum y)
         GT -> (- signum x, 0         )
 
-    rotate (x, y) = (-x, y)
+    rotate (x, y) = (y, -x)
 
 instance (Num a, Num b) => Num (a, b) where
   (x1, y1) + (x2, y2) = (x1 + x2, y1 + y2)
