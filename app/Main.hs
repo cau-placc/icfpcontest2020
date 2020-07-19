@@ -185,7 +185,7 @@ instance Show Value where
     p@(Pair _ _) -> let
         t = show p
       in
-        head t <> show l <> ", " <> tail t
+        head t : show l <> ", " <> tail t
   show (Num i) = show i
 
 modulateValue :: Value -> String
