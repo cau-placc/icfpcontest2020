@@ -79,9 +79,10 @@ createCommandFor ourrole tick allShips
   (ShipState role idt (Position (Vector x y))
                       (Velocity (Vector xd yd)) _ _ _ _, _)
   | ourrole == role =
-    trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos)
+    trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos ++
+           "Shot at: "   ++ show (shX, shY))
     [ Accelerate idt (Vector accX accY)
-    , Shoot      idt (Vector shX  shY ) 5
+    , Shoot      idt (Vector shX  shY ) 64
     ]
   | otherwise       = []
   where
