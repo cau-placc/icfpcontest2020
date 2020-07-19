@@ -117,6 +117,9 @@ instance FromValue Position where
 instance FromValue ShipId where
   fromValue v = ShipId <$> fromValue v
 
+instance FromValue Tick where
+  fromValue v = Tick <$> fromValue v
+
 instance FromValue Velocity where
   fromValue v = Velocity <$> fromValue v
 
