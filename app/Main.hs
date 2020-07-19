@@ -62,19 +62,41 @@ data Commands = Accelerate ShipId Vector | Detonate ShipId | Shoot ShipId Target
 data GameResponse = InvalidRequest | GameResponse Status Unknown (Maybe GameState) deriving Show
 data Role = Attack | Defence deriving Show
 data Unknown = Unknown Integer Role (Integer, Integer, Integer) (Integer, Integer) (Maybe (Integer, Integer, Integer , Integer)) deriving Show
+data Tick = Tick Integer
 data Vector = Vector Integer Integer deriving Show
 
-type ShipId = Integer
+data ShipId = ShipId Integer
+data Position = Position Vector
+data Velocity = Velocity Vector
 type Target = Value
 
-
-type GameState = [Value]
+data ShipState = ShipState Role ShipId Position Velocity Value Value Value Value
+data GameState = GameState Tick Value [(ShipState, [Commands])]
 
 demodulateResponse :: String -> Maybe GameResponse
 demodulateResponse = fromValue . demodulateValue
 
 class FromValue a where
   fromValue :: Value -> Maybe a
+
+instance FromValue ShipState where
+  fromValue v | Just [role, id, position, velocity, x4, x5, x6, x7] <- 
+      ShipState <$> fromValue role <*> fromValue id <*> fromValue position <*> fromValue velocity <*> fromValue x4 <*> fromValue x5 <*> fromValue x6 <*> fromValue x7
+  fromValue _ = Nothing
+
+instance FromValue GameState where
+  fromValue v | Just [tick, x3, commands] <- GameState <$> fromValue tick <*> fromValue x3 <*> fromValue commands
+  fromValue _ = Nothing
+
+instance FromValue Vector where
+  fromValue (Pair a b) = Vector <$> fromValue a <*> fromValue b
+  fromValue _          = Nothing
+
+instance FromValue Position where
+  fromValue v = Position <$> fromValue v
+
+instance FromValue Velocity where
+  fromValue v = Velocity <$> fromValue v
 
 instance FromValue Integer where
   fromValue (Num i) = pure i
