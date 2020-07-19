@@ -240,6 +240,7 @@ instance FromValue SendCommand where
 
 instance FromValue ReceivedCommand where
   fromValue v = do
+      list <- fromValue v
       case list of
           [Num 0, vector            ] -> Accelerated <$> fromValue vector
           [Num 2, target, x1, x2, x3] -> Fired <$> fromValue target <*> fromValue x1 <*> fromValue x2 <*> fromValue x3
