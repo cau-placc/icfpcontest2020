@@ -316,7 +316,7 @@ instance ToValue SendCommand where
   toValue (Accelerate shipId vector   ) = toValue (0::Integer, shipId, vector)
   toValue (Detonate   shipId          ) = toValue (1::Integer, shipId)
   toValue (Shoot      shipId target x3) = traceShowId $ toValue (2::Integer, shipId, target, x3)
-  toValue (Fork       shipId params   ) = toValue (toValue 3::Integer : toValue shipId : params )
+  toValue (Fork       shipId params   ) = toValue ((toValue 3::Integer) : (toValue shipId) : params )
 
 instance ToValue ShipId where
   toValue (ShipId i) = toValue i
