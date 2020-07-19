@@ -41,11 +41,17 @@ combat server playerKey (GameResponse Waiting unknown state) = do
     let Just state = demodulateResponse result
     putStrLn $ "Start:    " <> show state
     combat server playerKey state
-combat server playerKey (GameResponse Running unknown state) = do
+combat server playerKey (GameResponse Running unknown (Just state)) = do
     let Unknown _ role _ _ _ = unknown
-    let GameState tick _ ships = fromJust state
+    let GameState tick _ ships = state
     let ourCommands = concatMap (createCommandFor role tick ships) ships
     Right result <- command server playerKey ourCommands
+    let Just state = demodulateResponse result
+    putStrLn $ "Accelerate: " <> show state
+    combat server playerKey state
+combat server playerKey (GameResponse Running unknown Nothing) = do
+    let Unknown _ role _ _ _ = unknown
+    Right result <- command server playerKey []
     let Just state = demodulateResponse result
     putStrLn $ "Accelerate: " <> show state
     combat server playerKey state
