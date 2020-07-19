@@ -81,7 +81,7 @@ createCommandFor ourrole tick allShips
   | ourrole == role =
     trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos)
     [ Accelerate idt (Vector accX accY)
-    , Shoot      idt (Vector shX  shY ) Nil
+    , Shoot      idt (Vector shX  shY ) (Num 0)
     ]
   | otherwise       = []
   where
