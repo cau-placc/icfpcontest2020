@@ -37,7 +37,7 @@ combat server playerKey InvalidRequest = do
     putStrLn $ "Nothing:  " <> show state
     combat server playerKey state
 combat server playerKey (GameResponse Waiting unknown state) = do
-    Right result <- start server playerKey (70,64,10,1)
+    Right result <- start server playerKey (156,4,10,1)
     let Just state = demodulateResponse result
     putStrLn $ "Start:    " <> show state
     combat server playerKey state
@@ -82,7 +82,7 @@ createCommandFor ourrole tick allShips
     trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos ++
            "Shot at: "   ++ show (tpx, tpy))
     [ Accelerate idt (Vector accX accY)
-    , Shoot      idt (Vector tpx  tpy ) 64
+    , Shoot      idt (Vector tpx  tpy ) 5
     ]
   | otherwise       = []
   where
