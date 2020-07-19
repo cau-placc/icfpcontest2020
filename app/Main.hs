@@ -217,9 +217,9 @@ instance FromValue Commands where
   fromValue v = do
     list <- fromValue v
     case list of
-      [Num 0, vector    ] -> (Accelerate $ ShipId - 1) <$> fromValue vector
-      [Num 1            ] -> pure $ Detonate $ ShipId -1
-      [Num 2, target, x3] -> (Shoot $ ShipId -1) <$> fromValue target <*> fromValue x3
+      [Num 0, vector    ] -> (Accelerate $ ShipId (-1)) <$> fromValue vector
+      [Num 1            ] -> pure $ Detonate $ ShipId (-1)
+      [Num 2, target, x3] -> (Shoot $ ShipId (-1)) <$> fromValue target <*> fromValue x3
       _                   -> Nothing
 
 
