@@ -55,3 +55,5 @@ tests:
       - test
     dependencies:
       - JuicyPixels >= 3.3 && < 4
+      - base64
+      - text

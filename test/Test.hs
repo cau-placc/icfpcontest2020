@@ -45,8 +45,7 @@ galaxyFile = "galaxy.txt"
 statelessFile = "stateless.txt"
 statefulFile = "stateful.txt"
 
-
-emptyList = (Func Nil)
+emptyList = (Func Syntax.Nil)
 list0 = app Cons [Number 0, emptyList]
 list1 = app Cons [Number 0, app Cons [Number 0]]
 tuple0 = app Cons [Number 0, Number 0]
@@ -63,9 +62,10 @@ runGalaxy = do
   
   putStrLn $ "-----\nResult: " <> show shownResult
   void
-    $ mapM (\(i, d) -> renderDataAsPngTo ("output" <> show i <> ".png") d)
+    $ mapM (\(i, d) -> printDataAsDataUrlPng ("output" <> show i <> ".png") d)
     $ zip [0..]
     $ filter (\(Pic px) -> not $ null px)
     $ fromRight undefined pics
+
 
 

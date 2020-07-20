@@ -7,6 +7,8 @@ import Codec.Picture
 import Control.Monad (join)
 import Data.List (maximumBy)
 import Data.Ord (comparing)
+import Data.ByteString.Lazy.Base64.URL
+import Data.Text.Lazy hiding (minimum, maximum)
 
 import Interpreter
 import Interpreter.Data
@@ -39,6 +41,15 @@ renderDataAsImage (Pic pxs) = Just $ generateImage renderer width height
                               color   = if isWhite then 255 else 0
                           in PixelRGB8 color color color
 renderDataAsImage _         = Nothing
+
+printDataAsDataUrlPng :: Data -> String -> IO ()
+printDataAsDataUrlPng dat name | Just img <- renderDataAsImage dat
+                          = let
+                              base64 = unpack $ encodeBase64 $ encodePng img
+                            in
+                              putStrLn $ "<a href='data:image/png;charset=UTF-8;base64," <> base64 <> "'>Image "<> name <>"</a>"
+printDataAsDataUrlPng _ _ = putStrLn "Could not render Data"
+
 
 -- Maps a function over a pair
 mapPair :: (a -> b) -> (a, a) -> (b, b)
