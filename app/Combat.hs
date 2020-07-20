@@ -128,8 +128,8 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
         (Position (Vector curX curY)) = pos
         (Velocity (Vector curDX curDY)) = vel
         gravity@(gX, gY) = getGravOffestFor (curX, curY)
-        radius = max 16 $ sqrt $ fromIntegral ((curX^2) + curY^2)
-        maxSpeedComponent = sqrt $ radius / 2
+        radius = max 15 $ sqrt $ fromIntegral ((curX^2) + curY^2)
+        maxSpeedComponent = min 5 $ sqrt $ radius / 2
         targetVelocity = case compare (abs curX) (abs curY) of
               EQ -> ((fromIntegral $  signum curX) * maxSpeedComponent
                     ,(fromIntegral $ -signum curY) * maxSpeedComponent
