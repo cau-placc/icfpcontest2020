@@ -13,12 +13,17 @@ import           AlienNetwork
 
 main :: IO ()
 main = do
-  let apiKey = "e5a6755f75374b6fbb621ae3d46e6f36"
-      server = "https://icfpc2020-api.testkontur.ru"
-  (attack, defence) <- create server apiKey
-  forkIO $ do
-      Combat.init attack
-  Combat.init defence
+  runGame
+  runGalaxy
+
+runGame :: IO ()
+runGame = do
+    let apiKey = "e5a6755f75374b6fbb621ae3d46e6f36"
+        server = "https://icfpc2020-api.testkontur.ru"
+    (attack, defence) <- create server apiKey
+    forkIO $ do
+        Combat.init attack
+    Combat.init defence
 
 create :: String -> String -> IO (Connection, Connection)
 create server apiKey = do
@@ -35,7 +40,7 @@ instance FromValue CreateResponse where
   fromValue v = do
       (Num 1, [(Num 0, attackKey), (Num 1, defenceKey)]) <- fromValue v
       pure $ CreateResponse attackKey defenceKey
-{-
+
 galaxyFile = "galaxy.txt"
 statelessFile = "stateless.txt"
 statefulFile = "stateful.txt"
@@ -46,8 +51,8 @@ list0 = app Cons [Number 0, emptyList]
 list1 = app Cons [Number 0, app Cons [Number 0]]
 tuple0 = app Cons [Number 0, Number 0]
 
-main :: IO ()
-main = do
+runGalaxy :: IO ()
+runGalaxy = do
   galaxy <- readFile galaxyFile
   let code        = unlines $ lines galaxy
       Right prog  = either (error . show) Right $ parseAlienProg code
@@ -62,5 +67,5 @@ main = do
     $ zip [0..]
     $ filter (\(Pic px) -> not $ null px)
     $ fromRight undefined pics
--}
+
 
