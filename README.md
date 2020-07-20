@@ -20,6 +20,11 @@ Send is
 
 # TODO
 - [ ] Implement Send Function (Interpreter.sh)
+- [ ] Move everything but Main, Test and Renderer to a library in a lib dir 
+    - Renderer can't be part of the library as it uses dependencies not available in the Container during build
+      as such it can stay with Test
+    - [ ] Move It
+    - [ ] Change test in package.yaml to have source-dir lib instead of app, should remove warning about Main module workaround
 - [ ] Make Galaxy Evaluater into an interactive Galaxy Pad
   - [ ] how does the galaxy protocol interact with the world, it does not use the send function?
   - [ ] New executable that evaluates galaxy interaction (using evaluator) in a loop
