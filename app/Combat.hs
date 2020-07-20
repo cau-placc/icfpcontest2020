@@ -54,6 +54,7 @@ combat connection (GameResponse Running unknown (Just state)) = do
     let Unknown _ role _ _ _ = unknown
         GameState tick _ ships = state
         ourCommands = concatMap (createCommandFor role tick ships) ships
+    putStrLn $ "Sending:" <> show ourCommands
     state <- performAction "Commands:   " $ command connection ourCommands
     combat connection state
 combat connection (GameResponse Running unknown Nothing) = do
@@ -102,34 +103,63 @@ accelerate connection shipId vector = command connection [Accelerate shipId vect
 
 createCommandFor :: Role -> Tick -> [(ShipState, [ReceivedCommand])] -> (ShipState, [ReceivedCommand]) -> [SendCommand]
 createCommandFor ourrole tick allShips
-  (ShipState role idt (Position (Vector x y))
+  curShip@(ShipState role idt (Position (Vector x y))
                       (Velocity (Vector xd yd)) ShipConfig{x4 = s4} x2 x3 x4, _)
-  | ourrole == role =
-    trace ("Predicted: " ++ show predictedPos ++ "; Wanted: " ++ show wantedPos ++
-           "Shot at: "   ++ show (tpx, tpy)) $
-            if s4 <= 1 || ourrole == Defence then -- don't only fork when defending, to conserve fuel to evade and hover
-              [ Accelerate idt (Vector accX accY)
-              , Shoot      idt (Vector tpx  tpy ) 5
-              ]
+  | ourrole == role = if s4 <= 1 || ourrole == Defence then -- don't only fork when defending, to conserve fuel to evade and hover
+              ( Shoot      idt (Vector tpx  tpy ) 5
+              : acc
+              )
             else
-              [ Accelerate idt (Vector accX accY)
-              , Fork       idt (ShipConfig 150 2 5 1) -- TODO base ship config parameter based on our remaining config as they will be taken from us
-              ]
+              ( Fork       idt (ShipConfig 150 2 5 1) -- TODO base ship config parameter based on our remaining config as they will be taken from us
+              : acc
+              )
   | otherwise       = []
   where
-    (accX, accY) = limit $ predictedPos - wantedPos -- acceleration may at most be one in each ncomponent therefor the limit
-    dist = max (abs x) $ abs y
-    wantedPos    = (x, y) + (scale (((dist + 10) `div` 10) ) $ rotate (getGravOffestFor (x, y)))
-    predictedPos = (x, y) + getGravOffestFor (x, y) + (xd, yd)
     (ShipState _ _ (Position (Vector tx ty))
                    (Velocity (Vector txd tyd)) _ _ _ _, _) =
       getOtherShip role allShips
     (tpx, tpy) = (tx, ty) + getGravOffestFor (tx, ty) + (txd, tyd)
+    acc = createAccelerationFor ourrole tick allShips curShip
 
-limit :: (Integer, Integer) -> (Integer, Integer)
-limit (x,y) = (signum x, signum y)
+createAccelerationFor :: Role -> Tick -> [(ShipState, [ReceivedCommand])] -> (ShipState, [ReceivedCommand]) -> [SendCommand]
+createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
+    | ourRole == role
+    = let -- todo evade detonation when defending and close in for detonating when attacking
+        (Position (Vector curX curY)) = pos
+        (Velocity (Vector curDX curDY)) = vel
+        radius = sqrt $ fromIntegral ((curX^2) + curY^2)
+        targetSpeed = case (radius < 30.0) of
+            -- too far -> slow down
+            False -> 1
+            -- todo calculate orbiting speed based on radius, min radius 16
+            True -> min 2 2
+        targetDirection = case (16.0 < radius) of
+            -- in desirable distance to planet, or too far
+            True -> let
+                phase = atan2 (fromIntegral curX) (fromIntegral curY) :: Float
+                -- (1,0) on positive section of the y axis we wan't to move in x direction
+                in
+                  rotateF (1,0) phase
+            -- too close
+            False -> let
+                (dX,dY) = rotate $ getGravOffestFor (curX, curY)
+              in
+                (fromIntegral dX, fromIntegral dY)
+        targetVelocity = scale targetSpeed targetVelocity
+        currentVelocity = (fromIntegral curDX, fromIntegral curDY)
+        velocityDiff = targetVelocity - currentVelocity
+        (accX, accY) = limit velocityDiff
+      in
+        [Accelerate idt (Vector accX accY)]
+    | otherwise = []
 
-scale :: Integer -> (Integer, Integer) -> (Integer , Integer)
+rotateF :: (Float,Float) -> Float -> (Float, Float)
+rotateF (x,y) a = (x * cos a - y * sin a, x * sin a + y * cos a)
+
+limit :: (Float, Float) -> (Integer, Integer)
+limit (x,y) = (signum $ round x, signum $ round y)
+
+scale :: Float -> (Float, Float) -> (Float , Float)
 scale r (x,y) = (x*r, y*r)
 
 getGravOffestFor :: (Integer, Integer) -> (Integer, Integer)
