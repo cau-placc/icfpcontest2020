@@ -44,7 +44,7 @@ renderDataAsImage (Pic pxs) = Just $ generateImage renderer width height
 renderDataAsImage _         = Nothing
 
 printDataAsDataUrlPng :: String -> Data -> IO ()
-printDataAsDataUrlPng dat name | Just img <- renderDataAsImage dat
+printDataAsDataUrlPng name dat | Just img <- renderDataAsImage dat
                           = let
                               base64 = unpack $ encodeBase64 $ encodePng img
                             in
