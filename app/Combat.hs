@@ -127,6 +127,7 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
     = let -- todo evade detonation when defending and close in for detonating when attacking
         (Position (Vector curX curY)) = pos
         (Velocity (Vector curDX curDY)) = vel
+        gravity@(gX, gY) = getGravOffestFor (curX, curY)
         radius = sqrt $ fromIntegral ((curX^2) + curY^2)
         targetSpeed = case (radius < 30.0) of
             -- too far -> slow down
@@ -142,12 +143,12 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
                   rotateF (1,0) phase
             -- too close
             False -> let
-                (dX,dY) = rotate $ getGravOffestFor (curX, curY)
+                (dX,dY) = rotate gravity
               in
                 (fromIntegral dX, fromIntegral dY)
         targetVelocity = scale targetSpeed targetDirection
         currentVelocity = (fromIntegral curDX, fromIntegral curDY)
-        velocityDiff = targetVelocity - currentVelocity
+        velocityDiff = targetVelocity - (currentVelocity  + (fromIntegral gX, fromIntegral gY))
         (accX, accY) = limit velocityDiff
       in
         [Accelerate idt (Vector accX accY)]
