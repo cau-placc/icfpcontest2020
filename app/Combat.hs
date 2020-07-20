@@ -138,9 +138,10 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
             -- in desirable distance to planet, or too far
             True -> let
                 phase = atan2 (fromIntegral curX) (fromIntegral curY) :: Float
+
                 -- (1,0) on positive section of the y axis we wan't to move in x direction
                 in
-                  rotateF (1,0) phase
+                  trace ("X:" <> show curX <> " Y:" <> show curY <> " Phase:" <> show phase) $ rotateF (1,0) phase
             -- too close
             False -> let
                 (dX,dY) = rotate gravity
