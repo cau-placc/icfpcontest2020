@@ -1,6 +1,7 @@
 module Renderer ( extractPics
                 , renderDataAsImage
                 , renderDataAsPngTo
+                , printDataAsDataUrlPng
                 ) where
 
 import Codec.Picture
