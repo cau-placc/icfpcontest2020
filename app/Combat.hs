@@ -142,8 +142,8 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
                     )
         currentVelocity = (fromIntegral curDX, fromIntegral curDY)
         velocityDiff = targetVelocity - (currentVelocity + (fromIntegral gX, fromIntegral gY))
-        acceleration = limit velocityDiff
-        (accX, accY) = trace (show idt <> "Current Position: "<> show (curX, curY) <> "\tCurrent Velocity: " <> show currentVelocity <> "\tTarget: " <> show targetVelocity <> "\tAcceleration: " <> show acceleration) $ acceleration
+        acceleration = -(limit velocityDiff)
+        (accX, accY) = trace (show idt <> "\tCurrent Position: "<> show (curX, curY) <> "\tCurrent Velocity: " <> show currentVelocity <> "\tTarget: " <> show targetVelocity <> "\tAcceleration: " <> show acceleration) $ acceleration
       in
         [Accelerate idt (Vector accX accY)]
     | otherwise = []
