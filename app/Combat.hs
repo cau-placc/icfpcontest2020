@@ -130,10 +130,16 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
         gravity@(gX, gY) = getGravOffestFor (curX, curY)
         radius = max 16 $ sqrt $ fromIntegral ((curX^2) + curY^2)
         maxSpeedComponent = sqrt $ radius / 2
-        targetVelocity = (*) (rotateF (fromIntegral gX,fromIntegral gY) pi) $ case compare (abs curX) (abs curY) of
-              EQ -> (maxSpeedComponent                                                                             , maxSpeedComponent                                                                            )
-              LT -> (maxSpeedComponent                                                                             , fromIntegral $ ceiling $ maxSpeedComponent *  (sqrt 2 * (abs $ fromIntegral curX) /  radius ))
-              GT -> (fromIntegral $ ceiling $ maxSpeedComponent *   (sqrt 2 * (abs $ fromIntegral curY) / radius)  , maxSpeedComponent                                                                            )
+        targetVelocity = case compare (abs curX) (abs curY) of
+              EQ -> ((fromIntegral $ signum x) * maxSpeedComponent
+                    ,(fromIntegral $ -signum y) * maxSpeedComponent
+                    )
+              LT -> ((fromIntegral $ -signum y) * maxSpeedComponent
+                    ,(fromIntegral $  signum x) * fromIntegral $ ceiling $ maxSpeedComponent * (sqrt 2 * (abs $ fromIntegral curX) / radius)
+                    )
+              GT -> ((fromIntegral $ -signum y) * fromIntegral $ ceiling $ maxSpeedComponent * (sqrt 2 * (abs $ fromIntegral curY) / radius)
+                    ,(fromIntegral $  signum x) maxSpeedComponent
+                    )
         currentVelocity = (fromIntegral curDX, fromIntegral curDY)
         velocityDiff = targetVelocity - (currentVelocity  + (fromIntegral gX, fromIntegral gY))
         (accX, accY) = limit velocityDiff
