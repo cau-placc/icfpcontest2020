@@ -131,9 +131,9 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
         radius = max 16 $ sqrt $ fromIntegral ((curX^2) + curY^2)
         maxSpeedComponent = sqrt $ radius / 2
         targetVelocity = case compare (abs curX) (abs curY) of
-              EQ -> (maxSpeedComponent, maxSpeedComponent)
-              LT -> (maxSpeedComponent, radius/maxSpeedComponent * (fromIntegral curX))
-              GT -> (radius/maxSpeedComponent * (- fromIntegral curY), maxSpeedComponent)
+              EQ -> (maxSpeedComponent * (signum $ fromIntegral curY), maxSpeedComponent* (signum $ fromIntegral curX))
+              LT -> (maxSpeedComponent * (signum $ fromIntegral curY), radius/maxSpeedComponent *  (fromIntegral curX))
+              GT -> (radius/maxSpeedComponent *   (fromIntegral curY), maxSpeedComponent* (signum $ fromIntegral curX))
         currentVelocity = (fromIntegral curDX, fromIntegral curDY)
         velocityDiff = targetVelocity - (currentVelocity  + (fromIntegral gX, fromIntegral gY))
         (accX, accY) = limit velocityDiff
