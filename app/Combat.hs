@@ -135,9 +135,9 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
                     ,(fromIntegral $ -signum curY) * maxSpeedComponent
                     )
               LT -> ((fromIntegral $ -signum curY) * maxSpeedComponent
-                    ,(fromIntegral $  signum curX) * fromIntegral $ ceiling $ maxSpeedComponent * (sqrt 2 * (abs $ fromIntegral curX) / radius)
+                    ,(fromIntegral $  signum curX) * (fromIntegral $ ceiling $ maxSpeedComponent * (sqrt 2 * (abs $ fromIntegral curX) / radius))
                     )
-              GT -> ((fromIntegral $ -signum curY) * fromIntegral $ ceiling $ maxSpeedComponent * (sqrt 2 * (abs $ fromIntegral curY) / radius)
+              GT -> ((fromIntegral $ -signum curY) * (fromIntegral $ ceiling $ maxSpeedComponent * (sqrt 2 * (abs $ fromIntegral curY) / radius))
                     ,(fromIntegral $  signum curX) maxSpeedComponent
                     )
         currentVelocity = (fromIntegral curDX, fromIntegral curDY)
