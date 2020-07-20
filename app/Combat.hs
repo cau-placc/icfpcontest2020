@@ -129,12 +129,12 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
         (Velocity (Vector curDX curDY)) = vel
         gravity@(gX, gY) = getGravOffestFor (curX, curY)
         radius = sqrt $ fromIntegral ((curX^2) + curY^2)
-        targetSpeed = case (radius < 30.0) of
+        targetSpeed = case (radius < 40.0) of
             -- too far -> slow down
             False -> 1
             -- todo calculate orbiting speed based on radius, min radius 16
             True -> min 2 2
-        targetDirection = case (16.0 < radius) of
+        targetDirection = case (20.0 < radius) of
             -- in desirable distance to planet, or too far
             True -> let
                 phase = atan2 (fromIntegral curX) (fromIntegral curY) :: Float
