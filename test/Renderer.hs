@@ -8,7 +8,7 @@ import Codec.Picture
 import Control.Monad (join)
 import Data.List (maximumBy)
 import Data.Ord (comparing)
-import Data.ByteString.Lazy.Base64.URL
+import Data.ByteString.Lazy.Base64
 import Data.Text.Lazy hiding (minimum, maximum)
 
 import Interpreter
