@@ -27,11 +27,11 @@ init connection@(Connection server playerKey api) = catch (
     where
       handler :: SomeException -> IO ()
       handler ex =
-        let ex' = case  api of
+        let redacted = case  api of
                       Just apiKey -> replace apiKey "<REDACTED>" $ show ex
                       Nothing -> show ex
         in
-          putStrLn $ "Unexpected server response:\n" <> ex'
+          putStrLn $ "Unexpected server response:\n" <> redacted
 
 
 replace :: String -> String -> String -> String
@@ -46,17 +46,17 @@ combat connection InvalidRequest = do
     state <-performAction "Nothing:  " $  doNothing connection
     combat connection state
 combat connection (GameResponse Waiting unknown state) = do
-    state <- performAction "Start:    " $ start connection ShipConfig{fuel=300,x2=4,x3=10,x4=2}
-    case state of
+    state' <- performAction "Start:    " $ start connection ShipConfig{fuel=300,x2=4,x3=10,x4=2}
+    case state' of
         InvalidRequest -> pure ()
-        _              -> combat connection state
+        _              -> combat connection state'
 combat connection (GameResponse Running unknown (Just state)) = do
     let Unknown _ role _ _ _ = unknown
         GameState tick _ ships = state
         ourCommands = concatMap (createCommandFor role tick ships) ships
     putStrLn $ "Sending:" <> show ourCommands
-    state <- performAction "Commands:   " $ command connection ourCommands
-    combat connection state
+    state' <- performAction "Commands:   " $ command connection ourCommands
+    combat connection state'
 combat connection (GameResponse Running unknown Nothing) = do
     let Unknown _ role _ _ _ = unknown
     state <- performAction "Accelerate: " $ command connection []
@@ -145,7 +145,7 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
                 (dX,dY) = rotate $ getGravOffestFor (curX, curY)
               in
                 (fromIntegral dX, fromIntegral dY)
-        targetVelocity = scale targetSpeed targetVelocity
+        targetVelocity = scale targetSpeed targetDirection
         currentVelocity = (fromIntegral curDX, fromIntegral curDY)
         velocityDiff = targetVelocity - currentVelocity
         (accX, accY) = limit velocityDiff
