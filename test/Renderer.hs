@@ -48,7 +48,7 @@ printDataAsDataUrlPng name dat | Just img <- renderDataAsImage dat
                           = let
                               base64 = unpack $ encodeBase64 $ encodePng img
                             in
-                              putStrLn $ "<a href='data:image/png;charset=UTF-8;base64," <> base64 <> "'>Image "<> name <>"</a>"
+                              putStrLn $ "<img src='data:image/png;charset=UTF-8;base64," <> base64 <> "'>Image "<> name <>"</img>"
 printDataAsDataUrlPng _ _ = putStrLn "Could not render Data"
 
 
