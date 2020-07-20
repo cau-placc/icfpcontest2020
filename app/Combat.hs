@@ -105,25 +105,24 @@ createCommandFor :: Role -> Tick -> [(ShipState, [ReceivedCommand])] -> (ShipSta
 createCommandFor ourrole tick allShips
   curShip@(ShipState role idt (Position (Vector x y))
                       (Velocity (Vector xd yd)) ShipConfig{x4 = s4} x2 x3 x4, _)
-  | ourrole == role = if s4 <= 1 || ourrole == Defence then -- don't only fork when defending, to conserve fuel to evade and hover
-              ( Shoot      idt (Vector tpx  tpy ) 64
-              : acc
-              )
+  | ourrole == role = if s4 <= 1 || ourrole == Attack || accX /= 0 || accY /= 0 then -- don't only fork when defending, to conserve fuel to evade and hover
+              [Accelerate idt acc
+              , Shoot      idt (Vector tpx  tpy ) 64
+              ]
             else
-              ( Fork       idt (ShipConfig 150 2 5 1) -- TODO base ship config parameter based on our remaining config as they will be taken from us
-              : acc
-              )
+              [ Accelerate idt acc
+              , Fork       idt (ShipConfig 20 2 5 1) -- TODO base ship config parameter based on our remaining config as they will be taken from us
+              ]
   | otherwise       = []
   where
     (ShipState _ _ (Position (Vector tx ty))
                    (Velocity (Vector txd tyd)) _ _ _ _, _) =
       getOtherShip role allShips
     (tpx, tpy) = (tx, ty) + getGravOffestFor (tx, ty) + (txd, tyd)
-    acc = createAccelerationFor ourrole tick allShips curShip
+    acc@(Vector accX accY) = createAccelerationFor ourrole tick allShips curShip
 
-createAccelerationFor :: Role -> Tick -> [(ShipState, [ReceivedCommand])] -> (ShipState, [ReceivedCommand]) -> [SendCommand]
-createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
-    | ourRole == role
+createAccelerationFor :: Role -> Tick -> [(ShipState, [ReceivedCommand])] -> (ShipState, [ReceivedCommand]) -> Vector
+createAccelerationFor _ _ _ (ShipState  role idt pos vel conf _ _ _,_)
     = let -- todo evade detonation when defending and close in for detonating when attacking
         (Position (Vector curX curY)) = pos
         (Velocity (Vector curDX curDY)) = vel
@@ -145,8 +144,7 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
         acceleration = -(limit velocityDiff)
         (accX, accY) = trace (show idt <> "\tCurrent Position: "<> show (curX, curY) <> "\tCurrent Velocity: " <> show currentVelocity <> "\tTarget: " <> show targetVelocity <> "\tAcceleration: " <> show acceleration) $ acceleration
       in
-        [Accelerate idt (Vector accX accY)]
-    | otherwise = []
+        Vector accX accY
 
 rotateF :: (Float,Float) -> Float -> (Float, Float)
 rotateF (x,y) a = (x * cos a - y * sin a, x * sin a + y * cos a)
