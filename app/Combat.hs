@@ -133,7 +133,7 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
             -- too far -> slow down
             False -> 1
             -- todo calculate orbiting speed based on radius, min radius 16
-            True -> min 2 2
+            True -> max 2  (radius / 10)
         targetDirection = case (20.0 < radius) of
             -- in desirable distance to planet, or too far
             True -> let
