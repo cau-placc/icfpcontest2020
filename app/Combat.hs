@@ -129,12 +129,16 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
         (Velocity (Vector curDX curDY)) = vel
         gravity@(gX, gY) = getGravOffestFor (curX, curY)
         radius = sqrt $ fromIntegral ((curX^2) + curY^2)
-        targetSpeed = case (radius < 40.0) of
+        maxSpeedComponent = sqrt $ radius / 2
+        targetSpeed = case (radius < 55.0) of
             -- too far -> slow down
-            False -> 1
+            False -> (1.0,1.0) :: (Float,Float)
             -- todo calculate orbiting speed based on radius, min radius 16
-            True -> max 2  (sqrt $ radius / 10)
-        targetDirection = case (20.0 < radius) of
+            True -> case compare (abs curX) (abs curY) of
+                          EQ -> (maxSpeedComponent, maxSpeedComponent) :: (Float,Float)
+                          LT -> (maxSpeedComponent, radius/maxSpeedComponent * (fromIntegral $ abs curY)) :: (Float,Float)
+                          GT -> (radius/maxSpeedComponent * (fromIntegral $ abs curY), maxSpeedComponent) :: (Float,Float)
+        targetDirection = case (25.0 < radius) of
             -- in desirable distance to planet, or too far
             True -> let
                 phase = atan2 (fromIntegral curX) (fromIntegral curY) :: Float
@@ -147,7 +151,7 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
                 (dX,dY) = rotate gravity
               in
                 (fromIntegral dX, fromIntegral dY)
-        targetVelocity = scale targetSpeed targetDirection
+        targetVelocity = (targetSpeed::(Float, Float)) * (targetDirection :: (Float, Float))
         currentVelocity = (fromIntegral curDX, fromIntegral curDY)
         velocityDiff = targetVelocity - (currentVelocity  + (fromIntegral gX, fromIntegral gY))
         (accX, accY) = limit velocityDiff
