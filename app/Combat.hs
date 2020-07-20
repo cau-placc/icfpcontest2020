@@ -128,30 +128,12 @@ createAccelerationFor ourRole _ _ (ShipState  role idt pos vel conf _ _ _,_)
         (Position (Vector curX curY)) = pos
         (Velocity (Vector curDX curDY)) = vel
         gravity@(gX, gY) = getGravOffestFor (curX, curY)
-        radius = sqrt $ fromIntegral ((curX^2) + curY^2)
+        radius = max 16 $ sqrt $ fromIntegral ((curX^2) + curY^2)
         maxSpeedComponent = sqrt $ radius / 2
-        targetSpeed = case (radius < 55.0) of
-            -- too far -> slow down
-            False -> (1.0,1.0) :: (Float,Float)
-            -- todo calculate orbiting speed based on radius, min radius 16
-            True -> case compare (abs curX) (abs curY) of
-                          EQ -> (maxSpeedComponent, maxSpeedComponent) :: (Float,Float)
-                          LT -> (maxSpeedComponent, radius/maxSpeedComponent * (fromIntegral $ abs curY)) :: (Float,Float)
-                          GT -> (radius/maxSpeedComponent * (fromIntegral $ abs curY), maxSpeedComponent) :: (Float,Float)
-        targetDirection = case (25.0 < radius) of
-            -- in desirable distance to planet, or too far
-            True -> let
-                phase = atan2 (fromIntegral curX) (fromIntegral curY) :: Float
-
-                -- (1,0) on positive section of the y axis we wan't to move in x direction
-                in
-                  trace ("X:" <> show curX <> " Y:" <> show curY <> " Phase:" <> show phase) $ rotateF (0,1) phase
-            -- too close
-            False -> let
-                (dX,dY) = rotate gravity
-              in
-                (fromIntegral dX, fromIntegral dY)
-        targetVelocity = (targetSpeed::(Float, Float)) * (targetDirection :: (Float, Float))
+        targetVelocity = case compare (abs curX) (abs curY) of
+              EQ -> (maxSpeedComponent, maxSpeedComponent)
+              LT -> (maxSpeedComponent, radius/maxSpeedComponent * (fromIntegral $ abs curY))
+              GT -> (radius/maxSpeedComponent * (fromIntegral $ abs curY), maxSpeedComponent)
         currentVelocity = (fromIntegral curDX, fromIntegral curDY)
         velocityDiff = targetVelocity - (currentVelocity  + (fromIntegral gX, fromIntegral gY))
         (accX, accY) = limit velocityDiff
