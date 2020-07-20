@@ -106,7 +106,7 @@ createCommandFor ourrole tick allShips
   curShip@(ShipState role idt (Position (Vector x y))
                       (Velocity (Vector xd yd)) ShipConfig{x4 = s4} x2 x3 x4, _)
   | ourrole == role = if s4 <= 1 || ourrole == Defence then -- don't only fork when defending, to conserve fuel to evade and hover
-              ( Shoot      idt (Vector tpx  tpy ) 5
+              ( Shoot      idt (Vector tpx  tpy ) 64
               : acc
               )
             else
