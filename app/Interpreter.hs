@@ -82,15 +82,18 @@ loadDecl (Decl ident expr) = modify $ Map.insert ident expr
 runExpr ::  AlienExpr -> MIB Data
 runExpr (App l r    ) = (uncurry tryReduce) =<< foldApp l [r]
 runExpr (Number i   ) = pure $ Int i
-runExpr (Ident  name) = runExpr =<< gets (\env -> env Map.! name)
+runExpr (Ident  name) = runExpr =<< getIdent name
 runExpr (Func   name) = pure $ Part name []
+
+getIdent :: AlienName -> MIB AlienExpr
+getIdent name = gets (\env -> Map.findWithDefault (error $ "Unknown element " <> show name <> " in " <> show env) name env)
 
 foldApp ::  AlienExpr -> [AlienExpr] -> MIB (AlienFunc, [AlienExpr])
 foldApp l rs  = case l of
     App nl r -> foldApp nl $ r:rs
     Number i -> throwError $ "Unexpected Number, tries to apply parameters: " <> show rs
     Ident  n -> do
-        e <- gets (\env -> env Map.! n)
+        e <- getIdent n
         foldApp e rs
     Func   f -> pure (f, rs)
 
