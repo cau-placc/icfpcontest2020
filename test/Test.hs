@@ -109,16 +109,19 @@ runGalaxy = do
   let
     initState = InteractState{value = alienList []}
     --
-    result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10)]
+    result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10), (0,0)]
   displayOutputs $ (pure . snd) =<<result
 
-  forM_ [(i,j)| i <- [-16..16] , j <- [-16..16]] $ \x -> do
-      putStrLn $ "Trying next " <> show x
-      let startState = InteractState{value = fromJust $ fromValue $ toValue [toValue (10::Integer),toValue [(7::Integer)], toValue (0::Integer), Combat.Data.Nil]}
-          result = loadProg prog >> runGalaxy' startState  [x]
-      displayOutputs $ (pure . snd) =<< result
-
-
+  -- used for exploring next input
+  if False then do
+    putStrLn "Trying to find next Input!"
+    forM_ [(i,j)| i <- [-16..16] , j <- [-16..16]] $ \x -> do
+        putStrLn $ "Trying next " <> show x
+        let startState = InteractState{value = fromJust $ fromValue $ toValue [toValue (1::Integer),toValue [(11::Integer)], toValue (0::Integer), Combat.Data.Nil]}
+            result = loadProg prog >> runGalaxy' startState  [x]
+        displayOutputs $ (pure . snd) =<< result
+  else
+    pure ()
   putStrLn "Done"
 
 displayOutputs :: MIB [Data] -> IO ()

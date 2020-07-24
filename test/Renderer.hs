@@ -36,16 +36,22 @@ renderDataAsImage []         = Nothing
 renderDataAsImage pxss = Just $ generateImage renderer width height
   where pxs = Prelude.concatMap (\(Pic xs) -> xs) pxss
         pxs'            = mapPair fromIntegral <$> pxs
-        (minX, minY)    = mapPair minimum $ unzip pxs'
+        (minX, minY)    = mapPair minimum $ unzip ((0,0):pxs')
         pxs''           = (\(x, y) -> (x - minX, y - minY)) <$> pxs'
         scale           = 10
         (width, height) = mapPair (* scale) $ mapPair (+ 1) $ mapPair maximum $ unzip pxs''
         maxCount        = maximum $ fmap (\x -> Prelude.length $ Prelude.filter (x==) pxs'') $ nub pxs''
         renderer x y    = let pos = (x `div` scale, y `div` scale)
                               isWhite = elem pos pxs''
+                              isOrigin = pos == (0,0)
                               count = Prelude.length $ Prelude.filter (pos==) pxs''
-                              color = if isWhite then (fromIntegral $  count * 255 `div` maxCount) else 0
-                          in PixelRGB8 color color color
+                              c = (fromIntegral $  count * 255 `div` maxCount)
+                              color = case (isWhite, isOrigin) of
+                                              (True , False) -> PixelRGB8 c   c c
+                                              (False, True ) -> PixelRGB8 255 0 0
+                                              (False, False) -> PixelRGB8 0   0 0
+                                              (True , True ) -> PixelRGB8 c   c 0
+                          in color
 
 printDataAsDataUrlPng :: String -> [Data] -> IO ()
 printDataAsDataUrlPng name dat | Just img <- renderDataAsImage dat
