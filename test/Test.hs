@@ -147,7 +147,4 @@ displayOutput' (shownResult, pics) = do
   showPics pics
 
 showPics :: [Data] -> IO ()
-showPics pics = void
-                    $ mapM (\(i, d) -> printDataAsDataUrlPng ("output" <> show i <> ".png") d)
-                    $ zip [0..]
-                    $ filter (\(Pic px) -> not $ null px) pics
+showPics pics = printDataAsDataUrlPng "output.png" $ filter (\(Pic px) -> not $ null px) pics
