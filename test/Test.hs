@@ -141,8 +141,8 @@ displayOutput result = do
     pure (shown, pics)
 
 showResult :: Data -> MIB String
-showResult dat = (showData =<< runExpr (app Car [dataToExpr dat]))
---showResult dat = show <$> (dataToValue =<< runExpr (app Car [dataToExpr dat]))
+-- showResult dat = (showData =<< runExpr (app Car [dataToExpr dat]))
+showResult dat = show <$> (dataToValue =<< runExpr (app Car [dataToExpr dat]))
 
 displayOutput' :: (String, [Data]) -> IO ()
 displayOutput' (shownResult, pics) = do
