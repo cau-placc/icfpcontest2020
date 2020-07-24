@@ -36,6 +36,7 @@ Send is
 - [ ] Clean up code
 - [ ] Improve Documentation
 - [ ] Improve and Update Readme
+- [x] Implement sharing
     
 # Old Readme Content
 
