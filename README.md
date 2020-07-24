@@ -19,9 +19,14 @@ During the first hours of space battles, we managed to climb the scoreboard up t
 ![Scoreboard](img/Scoreboard.png)
 
 After we got the hang of orbital mechanics, which were pretty fun to play with -- although a bit wonky at times, we
-were able to achieve stable orbit around the star. We experimented with forking and sacrificing ships, tried shooting
-at everything and had fun watching the other battles on Twitch. In the end it was a fun contest! Thanks to the organizers,
-the participants and our fellow Hastronauts!
+were able to achieve stable orbit around the star.
+
+![Bridge](img/Bridge.png)
+
+We experimented with forking and sacrificing ships, tried shooting at everything and had fun watching the other battles
+on Twitch.
+
+In the end it was a fun contest! Thanks to the organizers,the participants and our fellow Hastronauts!
 
 # Content 
 
