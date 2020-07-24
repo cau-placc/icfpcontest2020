@@ -1,14 +1,33 @@
 module Syntax where
 
-data AlienName = FuncName Integer | Galaxy deriving (Show, Eq, Ord)
+import           Data.Char                      ( toLower )
 
-data AlienDecl = Decl { declIdent :: AlienName, declExpr :: AlienExpr } deriving (Show)
+data AlienName = FuncName Integer | Galaxy deriving (Eq, Ord)
 
-newtype AlienProg = AlienProg { unAlienProg :: [AlienDecl] } deriving (Show)
+data AlienDecl = Decl { declIdent :: AlienName, declExpr :: AlienExpr }
+
+newtype AlienProg = AlienProg { unAlienProg :: [AlienDecl] }
 
 data AlienExpr = App AlienExpr AlienExpr
                | Number Integer
                | Ident AlienName
-               | Func AlienFunc deriving (Show, Eq)
+               | Func AlienFunc deriving (Eq)
 
 data AlienFunc = Lt | Eq | S | T | F | K | I | B | C | IF0 | Dem | Mod | MultipleDraw | Draw | Interact | Send | Modem | F38 | Neg | Add | Mul | Div | Dec | Pwr2 | Inc | Minus | IsNil | Car | Cdr | Nil | Cons deriving (Show, Eq)
+
+
+instance Show AlienProg where
+  show AlienProg{unAlienProg = unAlienProg} = unlines $ map show unAlienProg
+
+instance Show AlienDecl where
+  show Decl{declIdent = declIdent, declExpr = declExpr } = show declIdent <> " = " <> show declExpr
+
+instance Show AlienExpr where
+  show (App    f s ) = "ap " <> show f <> " " <> show s
+  show (Number i   ) = show i
+  show (Ident ident) = show ident
+  show (Func  func ) = map toLower $ show func
+
+instance Show AlienName where
+  show Galaxy       = "galaxy"
+  show (FuncName i) = ':' : show i

@@ -1,7 +1,24 @@
 module Modulation where
 
- import Interpreter.Data
+ import           Debug.Trace
+
+ import           Interpreter.Data
  import           Syntax
+
+ bitsToString :: [Bool] -> String
+ bitsToString []        = []
+ bitsToString (False:t) = '0' : bitsToString t
+ bitsToString (True :t) = '1' : bitsToString t
+
+ stringToBits :: String -> Maybe [Bool]
+ stringToBits []        = pure $ []
+ stringToBits ('0': t)  = do
+    t' <- stringToBits t
+    pure $ False : t'
+ stringToBits ('1': t)  = do
+    t' <- stringToBits t
+    pure $ True : t'
+ stringToBits _         = Nothing
 
  modulate :: Integer -> [Bool]
  modulate n =
@@ -25,7 +42,9 @@ module Modulation where
    go k rs = go (div k 2) (odd k : rs)
  
  demodulateData :: [Bool] -> AlienExpr
- demodulateData dat = let (res, _) = inner dat in res
+ demodulateData dat = case inner dat of
+  (res , []) -> res
+  (res, remainder) -> trace ("Remainder ("<>show remainder<>")during demoduation, this is likly an error!") res
   where
    inner (False : False : rem) = (Func Nil, rem)
    inner (True : True : rem) =

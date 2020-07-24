@@ -1,6 +1,9 @@
 module Combat.Data where
 
+import qualified Syntax
+import           Syntax (AlienExpr)
 import           Debug.Trace
+import           Interpreter.Data
 
 data Status = Waiting
             | Running
@@ -150,10 +153,25 @@ instance FromValue Value where
   fromValue = pure
 
 
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
+instance FromValue AlienExpr where
+  fromValue (Num i)     = pure $ Syntax.Number i
+  fromValue Nil         = pure $ Syntax.Func Syntax.Nil
+  fromValue (Pair x y)  = do
+    x' <- fromValue x
+    y' <- fromValue y
+    pure $ app Syntax.Cons [x', y']
 
+instance FromValue Data where
+  fromValue (Num i)     = pure $ Int i
+  fromValue Nil         = pure $ Part Syntax.Nil []
+  fromValue (Pair x y)  = do
+    x' <- fromValue x
+    y' <- fromValue y
+    pure $ Part Syntax.Cons [x',y']
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 class ToValue a where
   toValue :: a -> Value

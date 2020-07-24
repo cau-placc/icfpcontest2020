@@ -1,5 +1,5 @@
 import           Control.Concurrent
-import           Control.Monad (void)
+import           Control.Monad (void,forM,forM_)
 import           Data.Either (fromRight)
 
 import           Parser hiding (app)
@@ -11,9 +11,12 @@ import           Combat
 import           Combat.Data
 import           AlienNetwork
 
+import DocTest
+
 main :: IO ()
 main = do
-  runGame
+  -- runGame
+  runDocTests
   runGalaxy
 
 runGame :: IO ()
@@ -45,27 +48,78 @@ galaxyFile = "galaxy.txt"
 statelessFile = "stateless.txt"
 statefulFile = "stateful.txt"
 
-emptyList = (Func Syntax.Nil)
-list0 = app Cons [Number 0, emptyList]
-list1 = app Cons [Number 0, app Cons [Number 0]]
-tuple0 = app Cons [Number 0, Number 0]
+alienList [] = Part Syntax.Nil []
+alienList (h:t) = Part Cons [Number h, dataToExpr $ alienList t]
+
+data InteractState = InteractState {value :: Data}
+
+-- runs interact from a starting state one interaction point
+stepGalaxy :: InteractState -> (Integer, Integer) -> MIB (InteractState, Data)
+stepGalaxy p@InteractState{value = state} (x,y) = do
+  let point = app Cons [Number x, Number y]
+  result <- runExpr $ app Interact [Ident Galaxy, dataToExpr state, point]
+  state' <- extractState result
+  pure (InteractState{value = state'}, result)
+
+-- Takes the result of evaluating interact and extracts the state part
+extractState :: Data -> MIB Data
+extractState (Part Cons [f,_]) = runExpr f
+extractState (Part f p) = do
+  res <- tryReduce f p
+  case res of
+    Part Cons [f,_] -> runExpr f
+    d               -> do
+      r <- showData d
+      return $ error $ "Expected a Part Cons [state,_], got " <> r
+extractState d = do
+      r <- showData d
+      return $ error $ "Expected a Part Cons [state,_], got " <> r
+
+-- runs interact from a starting state for the sequence of interaction points
+-- returning the final state and all results
+runGalaxy' :: InteractState -> [(Integer, Integer)] -> MIB (InteractState, [Data])
+runGalaxy' p []    = pure (p,[])
+runGalaxy' p (h:t) = do
+  (p',d) <- stepGalaxy p h
+  (fp, ds) <- runGalaxy' p' t
+  pure $ (fp, d : ds)
 
 runGalaxy :: IO ()
 runGalaxy = do
   galaxy <- readFile galaxyFile
   let code        = unlines $ lines galaxy
       Right prog  = either (error . show) Right $ parseAlienProg code
-      result      = loadProg prog >> runExpr
-        (app Interact [Ident Galaxy, emptyList, tuple0])
-      shownResult = runMIB $ showData =<< result
-      pics        = runMIB $ extractPics =<< result
-  
+      result = loadProg prog >> stepGalaxy InteractState{value = alienList []} (0,0)
+  -- writeFile "galaxy-parse.txt" $ show prog
+  displayOutput result
+
+  let
+    Right prog2 = either (error . show) Right $ parseAlienProg "galaxy = ap ap s ap ap b s ap ap c ap ap b c ap ap b ap c ap c ap ap s ap ap b s ap ap b ap b ap ap s i i lt eq ap ap s mul i nil ap ap s ap ap b s ap ap b ap b cons ap ap s ap ap b s ap ap b ap b cons ap c div ap c ap ap s ap ap b b ap ap c ap ap b b add neg ap ap b ap s mul div ap ap c ap ap b b galaxy ap ap c add 2"
+    result2 = loadProg prog2 >> runExpr (app Draw [app I [Ident Galaxy, Number  7, Number 0]])
+    result3 = loadProg prog2 >> runExpr (app Draw [app I  [Ident Galaxy, Number 13, Number 0]])
+  displayOutput (result2 >>= (\x -> pure (undefined, x)))
+  displayOutput (result3 >>= (\x -> pure (undefined, x)))
+
+  -- Currently fails because state is 0 but we expected a list
+  let
+    result2 = do
+      (state, _) <- result
+      loadProg prog >> stepGalaxy state (0,0)
+  displayOutput result2
+
+
+
+displayOutput :: MIB (InteractState,Data) -> IO ()
+displayOutput result = do
+  let
+      shownResult = runMIB $ showData.snd     =<< result
+      pics        = runMIB $ extractPics.snd  =<< result
+
   putStrLn $ "-----\nResult: " <> show shownResult
   void
     $ mapM (\(i, d) -> printDataAsDataUrlPng ("output" <> show i <> ".png") d)
     $ zip [0..]
     $ filter (\(Pic px) -> not $ null px)
-    $ fromRight undefined pics
-
+    $ fromRight (error "Failed to get Pics") pics
 
 

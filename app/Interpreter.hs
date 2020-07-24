@@ -40,12 +40,21 @@ showData = \case
       o       -> showData o
 
 modulateToString :: Data -> MIB String
-modulateToString dat = map (\b -> if b then '1' else '0') <$> modulateData dat
+modulateToString dat = bitsToString <$> modulateData dat
 
 stringDemodulate :: String -> MIB Data
-stringDemodulate input = if all (\c -> c == '0' || c == '1') input
-  then runExpr $ demodulateData $ map (\c -> if c == '0' then False else True) input
-  else throwError $ "Demodulation Error: " <> input
+stringDemodulate input = case stringToBits input of
+  Nothing -> throwError $ "Demodulation Error: " <> input
+  Just bits ->  runExpr $ demodulateData bits
+
+dataToExpr :: Data -> AlienExpr
+dataToExpr (Int       i) = Number i
+dataToExpr (Part f    p) = app f p
+dataToExpr (Modulated s) = let
+    Just bits = stringToBits s
+  in
+    app Mod [demodulateData bits]
+dataToExpr (Pic       pixel) = app Draw [{-- TODO Add pixel here --}]
 
 modulateData :: Data -> MIB [Bool]
 modulateData (Int i   ) = pure $ modulate i
@@ -56,11 +65,10 @@ modulateData (Part p t)   = do
     Part Cons [x,y] -> do
       h <- modulateData =<< runExpr x
       t <- modulateData =<< runExpr y
-      pure $ h ++ t
+      pure $ [True, True] ++ h ++ t
     e -> do
       e' <- showData e
       throwError $ "Expected Nil or Cons, got " <> e'
-
 
 runMIB :: MIB a -> Either String a
 runMIB = runIdentity . runExceptT . flip evalStateT Map.empty . unMIB -- TODO: use except
@@ -71,30 +79,31 @@ loadProg (AlienProg decls) = mapM_ loadDecl decls
 loadDecl :: AlienDecl -> MIB ()
 loadDecl (Decl ident expr) = modify $ Map.insert ident expr
 
-runExpr :: AlienExpr -> MIB Data
+runExpr ::  AlienExpr -> MIB Data
 runExpr (App l r    ) = (uncurry tryReduce) =<< foldApp l [r]
 runExpr (Number i   ) = pure $ Int i
 runExpr (Ident  name) = runExpr =<< gets (\env -> env Map.! name)
 runExpr (Func   name) = pure $ Part name []
 
-foldApp :: AlienExpr -> [AlienExpr] -> MIB (AlienFunc, [AlienExpr])
+foldApp ::  AlienExpr -> [AlienExpr] -> MIB (AlienFunc, [AlienExpr])
 foldApp l rs  = case l of
     App nl r -> foldApp nl $ r:rs
-    Number i -> throwError $ "Unexpected Number"
+    Number i -> throwError $ "Unexpected Number, tries to apply parameters: " <> show rs
     Ident  n -> do
         e <- gets (\env -> env Map.! n)
         foldApp e rs
     Func   f -> pure (f, rs)
 
-continue :: AlienExpr -> [AlienExpr] -> MIB Data
-continue x [] = runExpr x
-continue x t  = (uncurry tryReduce) =<< foldApp x t
+continue ::  AlienExpr -> [AlienExpr] -> MIB Data
+continue x []               = runExpr x
+continue (Number i) l@(_:_) = error "Continue on number with non empty parameter list!"
+continue x t                = (uncurry tryReduce) =<< foldApp x t
 
-tryReduce :: AlienFunc  -> [AlienExpr] -> MIB Data
+tryReduce ::  AlienFunc  -> [AlienExpr] -> MIB Data
 tryReduce Nil  (x:t)          = tryReduce T t
 tryReduce Neg  [x]            = Int . negate <$> (runExpr >=> asInt) x
 tryReduce Cons (x: y: z: t)   = continue z (x:y:t)
-tryReduce K (x:y:t)           = continue x t
+--tryReduce K (x:y:t)           = continue x t -- See T
 tryReduce S (x:y:z:t)         = continue x (z : App y z : t)
 tryReduce C (x:y:z:t)         = continue x (z:y:t)
 tryReduce B (x:y:z:t)         = continue x (App y z:t)
@@ -118,7 +127,7 @@ tryReduce Mul  [x, y] = do
 tryReduce Div  [x, y] = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
-  pure $  Int $ x' `div` y'
+  pure $  Int $ x' `quot` y'
 tryReduce Eq (x:y:t) = do
   x' <- (runExpr >=> asInt) x
   y' <- (runExpr >=> asInt) y
@@ -159,7 +168,7 @@ tryReduce Draw [v] = do
   lp <- mapM asPair l
   lpi <- mapM (\(f, s) -> (,) <$> asInt f <*> asInt s) lp
   pure $ Pic lpi
-tryReduce Send [_] = undefined
+tryReduce Send (x:t) = error $ "Send is unimplemented, tried to send " <> show x
 tryReduce F38 (x2:x0:t) = tryReduce IF0
             (  app Car [x0]
             : toExprList [app Modem [app Car [app Cdr [x0]]], app MultipleDraw [app Car [app Cdr [app Cdr [x0]]]]]

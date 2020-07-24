@@ -196,10 +196,10 @@ showAlienList (h:t) = let
 modulateValue :: Value -> String
 modulateValue Nil         = "00"
 modulateValue (Pair f s)  = "11" ++ modulateValue f ++ modulateValue s
-modulateValue (Num i)     = map (\x -> if x then '1' else '0') $ modulate i
+modulateValue (Num i)     = bitsToString $ modulate i
 
 demodulateValue :: String -> Value
-demodulateValue string = fst (demodulateV (fmap (/= '0') string))
+demodulateValue string = fst (demodulateV (fromJust undefined stringToBits string))
   where
     demodulateV (False: False: res) = (Nil, res)
     demodulateV (True : True : res) = let
