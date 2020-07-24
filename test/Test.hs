@@ -1,6 +1,7 @@
 import           Control.Concurrent
 import           Control.Monad (void,forM,forM_)
 import           Data.Either (fromRight)
+import           Data.Maybe (fromJust)
 
 import           Parser hiding (app)
 import           Renderer
@@ -86,40 +87,61 @@ runGalaxy' p (h:t) = do
 
 runGalaxy :: IO ()
 runGalaxy = do
+
+  putStrLn "Testing draw (Checkerboard (7,0)) and draw (Checkerboard (13,0))"
+
+  let Right prog2 = either (error . show) Right $ parseAlienProg "galaxy = ap ap s ap ap b s ap ap c ap ap b c ap ap b ap c ap c ap ap s ap ap b s ap ap b ap b ap ap s i i lt eq ap ap s mul i nil ap ap s ap ap b s ap ap b ap b cons ap ap s ap ap b s ap ap b ap b cons ap c div ap c ap ap s ap ap b b ap ap c ap ap b b add neg ap ap b ap s mul div ap ap c ap ap b b galaxy ap ap c add 2"
+      result2 = loadProg prog2 >> runExpr (app Draw [app I [Ident Galaxy, Number  7, Number 0]])
+      result3 = loadProg prog2 >> runExpr (app Draw [app I  [Ident Galaxy, Number 13, Number 0]])
+  showPics $ fromRight undefined $ runMIB $ extractPics =<<result2
+  showPics $ fromRight undefined $ runMIB $ extractPics =<<result3
+
+  putStrLn "\nParsing Galaxy:"
   galaxy <- readFile galaxyFile
-  let code        = unlines $ lines galaxy
-      Right prog  = either (error . show) Right $ parseAlienProg code
-      result = loadProg prog >> stepGalaxy InteractState{value = alienList []} (0,0)
-  -- writeFile "galaxy-parse.txt" $ show prog
-  displayOutput result
+  let Right prog  = either (error . show) Right $ parseAlienProg galaxy
 
+  if show prog == (unlines $ lines galaxy) then
+    putStrLn "[Ok] Equality holds!"
+  else
+    putStrLn "[Warning] Expected Equality"
+
+  putStrLn "\nRunning Galaxy:"
   let
-    Right prog2 = either (error . show) Right $ parseAlienProg "galaxy = ap ap s ap ap b s ap ap c ap ap b c ap ap b ap c ap c ap ap s ap ap b s ap ap b ap b ap ap s i i lt eq ap ap s mul i nil ap ap s ap ap b s ap ap b ap b cons ap ap s ap ap b s ap ap b ap b cons ap c div ap c ap ap s ap ap b b ap ap c ap ap b b add neg ap ap b ap s mul div ap ap c ap ap b b galaxy ap ap c add 2"
-    result2 = loadProg prog2 >> runExpr (app Draw [app I [Ident Galaxy, Number  7, Number 0]])
-    result3 = loadProg prog2 >> runExpr (app Draw [app I  [Ident Galaxy, Number 13, Number 0]])
-  displayOutput (result2 >>= (\x -> pure (undefined, x)))
-  displayOutput (result3 >>= (\x -> pure (undefined, x)))
+    initState = InteractState{value = alienList []}
+    -- hangs at this state
+    stateValue = toValue [toValue (1::Integer), toValue [1::Integer], toValue (0::Integer), Combat.Data.Nil]
+    continueState = InteractState{value = fromJust $ fromValue stateValue}
+    result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0)]
+  displayOutputs $ (\x -> pure $ snd x) =<<result
+  putStrLn "Done"
 
-  -- Currently fails because state is 0 but we expected a list
-  let
-    result2 = do
-      (state, _) <- result
-      loadProg prog >> stepGalaxy state (0,0)
-  displayOutput result2
+displayOutputs :: MIB [Data] -> IO ()
+displayOutputs results = do
+  void $ mapM displayOutput' $ fromRight undefined $ runMIB $ do
+      results' <- results
+      forM results' $ \result -> do
+        shown <- showResult result
+        pics  <- extractPics result
+        pure (shown, pics)
 
-
-
-displayOutput :: MIB (InteractState,Data) -> IO ()
+displayOutput :: MIB Data -> IO ()
 displayOutput result = do
-  let
-      shownResult = runMIB $ showData.snd     =<< result
-      pics        = runMIB $ extractPics.snd  =<< result
+  displayOutput' $ fromRight undefined $ runMIB $ do
+    shown <- showResult =<< result
+    pics  <- extractPics =<< result
+    pure (shown, pics)
 
-  putStrLn $ "-----\nResult: " <> show shownResult
-  void
-    $ mapM (\(i, d) -> printDataAsDataUrlPng ("output" <> show i <> ".png") d)
-    $ zip [0..]
-    $ filter (\(Pic px) -> not $ null px)
-    $ fromRight (error "Failed to get Pics") pics
+showResult :: Data -> MIB String
+showResult dat = (showData =<< runExpr (app Car [dataToExpr dat]))
+--showResult dat = show <$> (dataToValue =<< runExpr (app Car [dataToExpr dat]))
 
+displayOutput' :: (String, [Data]) -> IO ()
+displayOutput' (shownResult, pics) = do
+  putStrLn $ "-----\nNew State: " <> show shownResult
+  showPics pics
 
+showPics :: [Data] -> IO ()
+showPics pics = void
+                    $ mapM (\(i, d) -> printDataAsDataUrlPng ("output" <> show i <> ".png") d)
+                    $ zip [0..]
+                    $ filter (\(Pic px) -> not $ null px) pics

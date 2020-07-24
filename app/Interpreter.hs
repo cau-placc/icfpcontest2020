@@ -18,6 +18,7 @@ import           Data.Functor.Identity          ( Identity
 
 import Modulation
 import Interpreter.Data
+import qualified Combat.Data
 
 (.:) = (.) . (.)
 
@@ -55,6 +56,17 @@ dataToExpr (Modulated s) = let
   in
     app Mod [demodulateData bits]
 dataToExpr (Pic       pixel) = app Draw [{-- TODO Add pixel here --}]
+
+dataToValue :: Data -> MIB Combat.Data.Value
+dataToValue (Int           i) = pure $ Combat.Data.Num i
+dataToValue (Part    f     p) = do
+  result <- tryReduce f p
+  case result of
+    (Part Nil     []) -> pure Combat.Data.Nil
+    (Part Cons [h,t]) -> Combat.Data.Pair <$> (dataToValue =<< runExpr h) <*> (dataToValue =<< runExpr t)
+    e -> do
+      e' <- showData e
+      throwError $ "Expected Nil or Cons, got " <> e'
 
 modulateData :: Data -> MIB [Bool]
 modulateData (Int i   ) = pure $ modulate i
