@@ -11,7 +11,7 @@ whereas the actual task was rather vague, which unfortunately did not help with 
 hacking session until there was a specific problem to solve, that is, the *huge message* to decode, which was quite
 a bit of fun. Nevertheless it would have been a good motivation to have small achievements rewarded with points.
 
-![Coding](img/IMG_1.jpg)
+![Coding](img/IMG.jpg)
 
 For the space battle part of the contest, we began by implementing a simple but effective strategy -- doing nothing.
 During the first hours of space battles, we managed to climb the scoreboard up to fourth place!
