@@ -8,6 +8,7 @@ import           Control.Monad.Except
 import qualified Data.Map                      as Map
 import           Data.Map                       ( Map )
 import           Data.Functor
+import           Data.Bifunctor (first, second)
 import           Text.Show.Functions
 
 import           Syntax
@@ -83,22 +84,36 @@ modulateData (Part p t)   = do
       throwError $ "Expected Nil or Cons, got " <> e'
 
 runMIB :: MIB a -> Either String a
-runMIB = runIdentity . runExceptT . flip evalStateT Map.empty . unMIB -- TODO: use except
+runMIB = runIdentity . runExceptT . flip evalStateT (Map.empty, -1) . unMIB
 
 loadProg :: AlienProg -> MIB ()
 loadProg (AlienProg decls) = mapM_ loadDecl decls
 
 loadDecl :: AlienDecl -> MIB ()
-loadDecl (Decl ident expr) = modify $ Map.insert ident expr
+loadDecl (Decl ident expr) = modify $ first $ Map.insert ident expr
+
+addShared :: AlienExpr -> MIB AlienExpr
+addShared expr = do
+  index <- gets snd
+  modify $ second $ \_ ->  index - 1
+  let name = FuncName index
+  loadDecl (Decl name expr)
+  pure $ Ident name
+
+updateIdent :: AlienName -> Data -> MIB ()
+updateIdent name dat = loadDecl (Decl name $ dataToExpr dat)
 
 runExpr ::  AlienExpr -> MIB Data
 runExpr (App l r    ) = (uncurry tryReduce) =<< foldApp l [r]
 runExpr (Number i   ) = pure $ Int i
-runExpr (Ident  name) = runExpr =<< getIdent name
+runExpr (Ident  name) = do
+  res <- runExpr =<< getIdent name -- get and eval ident
+  updateIdent name res             -- store evaluated ident
+  pure res                         -- return result
 runExpr (Func   name) = pure $ Part name []
 
 getIdent :: AlienName -> MIB AlienExpr
-getIdent name = gets (\env -> Map.findWithDefault (error $ "Unknown element " <> show name <> " in " <> show env) name env)
+getIdent name = gets (\env -> Map.findWithDefault (error $ "Unknown element " <> show name <> " in " <> show env) name $ fst env)
 
 foldApp ::  AlienExpr -> [AlienExpr] -> MIB (AlienFunc, [AlienExpr])
 foldApp l rs  = case l of
@@ -119,7 +134,9 @@ tryReduce Nil  (x:t)          = tryReduce T t
 tryReduce Neg  [x]            = Int . negate <$> (runExpr >=> asInt) x
 tryReduce Cons (x: y: z: t)   = continue z (x:y:t)
 --tryReduce K (x:y:t)           = continue x t -- See T
-tryReduce S (x:y:z:t)         = continue x (z : App y z : t)
+tryReduce S (x:y:z:t)         = do
+  z' <- addShared z
+  continue x (z' : App y z' : t)
 tryReduce C (x:y:z:t)         = continue x (z:y:t)
 tryReduce B (x:y:z:t)         = continue x (App y z:t)
 tryReduce I (x:t)             = continue x t

@@ -14,7 +14,7 @@ import           Data.Functor.Identity          ( Identity
                                                 , runIdentity
                                                 )
 
-type MIBEnv = Map AlienName AlienExpr
+type MIBEnv = (Map AlienName AlienExpr, Integer)
 
 newtype MIB a = MIB { unMIB :: StateT MIBEnv (Except String) a }
   deriving (Functor, Applicative, Monad, MonadState MIBEnv, Alternative, MonadError String)

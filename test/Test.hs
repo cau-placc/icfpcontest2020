@@ -108,11 +108,9 @@ runGalaxy = do
   putStrLn "\nRunning Galaxy:"
   let
     initState = InteractState{value = alienList []}
-    -- hangs at this state
-    stateValue = toValue [toValue (1::Integer), toValue [1::Integer], toValue (0::Integer), Combat.Data.Nil]
-    continueState = InteractState{value = fromJust $ fromValue stateValue}
-    result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0)]
-  displayOutputs $ (\x -> pure $ snd x) =<<result
+    result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0)]
+  displayOutputs $ (pure . snd) =<<result
+
   putStrLn "Done"
 
 displayOutputs :: MIB [Data] -> IO ()
