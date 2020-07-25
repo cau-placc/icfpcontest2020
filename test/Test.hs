@@ -51,15 +51,18 @@ statefulFile = "stateful.txt"
 alienList [] = Part Syntax.Nil []
 alienList (h:t) = Part Cons [Number h, dataToExpr $ alienList t]
 
-data InteractState = InteractState {value :: Data}
+data InteractState = InteractState {value :: Value, prog :: MIB ()}
 
 -- runs interact from a starting state one interaction point
-stepGalaxy :: InteractState -> (Integer, Integer) -> MIB (InteractState, Data)
-stepGalaxy p@InteractState{value = state} (x,y) = do
+stepGalaxy :: InteractState -> (Integer, Integer) -> IO (InteractState, [Img])
+stepGalaxy p@InteractState{value = state, prog = prog} (x,y) = do
   let point = app Cons [Number x, Number y]
-  result <- runExpr $ app Interact [Ident Galaxy, dataToExpr state, point]
-  state' <- extractState result
-  pure (InteractState{value = state'}, result)
+      Right (newState, imgs) = runMIB $ prog >> do
+          result <- runExpr $ app Interact [Ident Galaxy, fromJust $ fromValue state, point]
+          state' <- dataToValue =<< extractState result
+          imgs   <- extractPics result
+          pure (state', imgs)
+  pure (InteractState{value = newState, prog = prog}, imgs)
 
 -- Takes the result of evaluating interact and extracts the state part
 extractState :: Data -> MIB Data
@@ -77,12 +80,12 @@ extractState d = do
 
 -- runs interact from a starting state for the sequence of interaction points
 -- returning the final state and all results
-runGalaxy' :: InteractState -> [(Integer, Integer)] -> MIB (InteractState, [Data])
+runGalaxy' :: InteractState -> [(Integer, Integer)] -> IO (InteractState, [(InteractState, [Img])])
 runGalaxy' p []    = pure (p,[])
 runGalaxy' p (h:t) = do
-  (p',d) <- stepGalaxy p h
-  (fp, ds) <- runGalaxy' p' t
-  pure $ (fp, d : ds)
+  r@(p',d) <- stepGalaxy p h
+  (fp, rs) <- runGalaxy' p' t
+  pure $ (fp, r : rs)
 
 runGalaxy :: IO ()
 runGalaxy = do
@@ -106,58 +109,50 @@ runGalaxy = do
 
   putStrLn "\nRunning Galaxy:"
 
-  if True then do -- skipping initial sequence as generating the last image takes "forever"
+  if False then do -- skipping initial sequence as generating the last image takes "forever"
     let
-      initState = InteractState{value = alienList []}
-      result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10){-, (0,0)-}]
+      initState = InteractState{value = Combat.Data.Nil, prog = loadProg prog}
+    result <- runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10){-, (0,0)-}]
     putStrLn "Starting from the begining, this will take some time ..."
-    displayOutputs $ (pure . snd) =<<result
+    displayOutputs $ snd result
   else
     pure ()
 
   let
     -- start at [2, [1, -1], 0, nil]
-    state = fromJust $ fromValue $ toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
-    initState = InteractState{value = state}
-    result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0), (0,0)]
-  displayOutputs $ (pure . snd) =<<result
+    state = toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
+    continue = [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0),(0,0)]
+    -- start at [5, [2, 0, nil, nil, nil, nil, nil, 0], 8, nil]
+    -- state = toValue [toValue (5::Integer), toValue [toValue (2::Integer),toValue (0::Integer), Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, toValue (0::Integer)], toValue (8::Integer), Combat.Data.Nil]
+    -- continue = [(18,0)]
+    initState = InteractState{value = state, prog = loadProg prog}
+  result <- runGalaxy' initState continue
+  displayOutputs $ snd result
 
   -- used for exploring next input
   if False then do
     putStrLn "Trying to find next Input!"
     forM_ [(i,j)| i <- [-16..16] , j <- [-16..16]] $ \x -> do
         putStrLn $ "Trying next " <> show x
-        let startState = InteractState{value = fromJust $ fromValue $ toValue [toValue (1::Integer),toValue [(11::Integer)], toValue (0::Integer), Combat.Data.Nil]}
-            result = loadProg prog >> runGalaxy' startState  [x]
-        displayOutputs $ (pure . snd) =<< result
+        let startState = InteractState{value = fromJust $ fromValue $ toValue [toValue (1::Integer),toValue [(11::Integer)], toValue (0::Integer), Combat.Data.Nil], prog = loadProg prog}
+        result <- runGalaxy' startState  [x]
+        displayOutputs $ snd result
   else
     pure ()
   putStrLn "Done"
 
-displayOutputs :: MIB [Data] -> IO ()
-displayOutputs results = do
-  void $ mapM displayOutput' $ fromRight undefined $ runMIB $ do
-      results' <- results
-      forM results' $ \result -> do
-        shown <- showResult result
-        pics  <- extractPics result
-        pure (shown, pics)
-
-displayOutput :: MIB Data -> IO ()
-displayOutput result = do
-  displayOutput' $ fromRight undefined $ runMIB $ do
-    shown <- showResult =<< result
-    pics  <- extractPics =<< result
-    pure (shown, pics)
+displayOutputs :: [(InteractState ,[Img])] -> IO ()
+displayOutputs results = void $ mapM displayOutput results
 
 showResult :: Data -> MIB String
 -- showResult dat = (showData =<< runExpr (app Car [dataToExpr dat]))
 showResult dat = show <$> (dataToValue =<< runExpr (app Car [dataToExpr dat]))
 
-displayOutput' :: (String, [Data]) -> IO ()
-displayOutput' (shownResult, pics) = do
-  putStrLn $ "-----\nNew State: " <> show shownResult
+displayOutput :: (InteractState, [Img]) -> IO ()
+displayOutput (InteractState{value = state}, pics) = do
+  putStrLn $ "-----\nNew State: " <> (show state)
   showPics pics
+  putStrLn $ "-----"
 
-showPics :: [Data] -> IO ()
-showPics pics = printDataAsDataUrlPng "output.png" $ filter (\(Pic px) -> not $ null px) pics
+showPics :: [Img] -> IO ()
+showPics pics = printDataAsDataUrlPng "output.png" pics

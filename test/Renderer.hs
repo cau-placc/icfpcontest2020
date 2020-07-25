@@ -2,6 +2,7 @@ module Renderer ( extractPics
                 , renderDataAsImage
                 , renderDataAsPngTo
                 , printDataAsDataUrlPng
+                , Img
                 ) where
 
 import Codec.Picture
@@ -14,9 +15,11 @@ import Data.Text.Lazy hiding (minimum, maximum)
 import Interpreter
 import Interpreter.Data
 
+data Img = Img [(Integer, Integer)]
+
 -- Extracts the pictures from the given data
-extractPics :: Data -> MIB [Data]
-extractPics (Pic pxs)  = pure $ [(Pic pxs)]
+extractPics :: Data -> MIB [Img]
+extractPics (Pic pxs)  = pure $ [Img pxs]
 extractPics (Part f p) = do
   res <- tryReduce f p
   case res of
@@ -25,16 +28,16 @@ extractPics (Part f p) = do
 extractPics _          = pure $ []
 
 -- Renders the given data to the provided file path as a PNG image.
-renderDataAsPngTo :: String -> [Data] -> IO ()
+renderDataAsPngTo :: String -> [Img] -> IO ()
 renderDataAsPngTo fp d = case renderDataAsImage d of
   Just img -> writePng fp img
   Nothing  -> putStrLn "Could not render Data!"
 
 -- Renders the given data to an image if it is a Pic.
-renderDataAsImage :: [Data] -> Maybe (Image PixelRGB8)
+renderDataAsImage :: [Img] -> Maybe (Image PixelRGB8)
 renderDataAsImage []         = Nothing
 renderDataAsImage pxss = Just $ generateImage renderer width height
-  where pxs = Prelude.concatMap (\(Pic xs) -> xs) pxss
+  where pxs = Prelude.concatMap (\(Img xs) -> xs) pxss
         pxs'            = mapPair fromIntegral <$> pxs
         (minX, minY)    = mapPair minimum $ unzip ((0,0):pxs')
         pxs''           = (\(x, y) -> (x - minX, y - minY)) <$> pxs'
@@ -53,7 +56,7 @@ renderDataAsImage pxss = Just $ generateImage renderer width height
                                               (True , True ) -> PixelRGB8 c   c 0
                           in color
 
-printDataAsDataUrlPng :: String -> [Data] -> IO ()
+printDataAsDataUrlPng :: String -> [Img] -> IO ()
 printDataAsDataUrlPng name dat | Just img <- renderDataAsImage dat
                           = let
                               base64 = unpack $ encodeBase64 $ encodePng img
