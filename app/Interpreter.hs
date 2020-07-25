@@ -5,13 +5,12 @@ module Interpreter where
 import           Control.Applicative
 import           Control.Monad.State
 import           Control.Monad.Except
+import           Control.Concurrent.MVar
 import qualified Data.Map                      as Map
 import           Data.Map                       ( Map )
 import           Data.Maybe (fromJust)
 import           Data.Functor
-import           Data.Bifunctor (first, second)
 import           Text.Show.Functions
-import           System.IO.Unsafe (unsafePerformIO)
 
 import           Syntax
 import           Combat
@@ -63,6 +62,8 @@ dataToExpr (Modulated s) = let
 dataToExpr (Pic       pixel) = app Draw [fromJust $ Combat.Data.fromValue $ Combat.Data.toValue pixel]
 
 dataToValue :: Data -> MIB Combat.Data.Value
+dataToValue (Pic        _) = throwError "Can't convert Data.Pic to Value"
+dataToValue (Modulated  _) = throwError "Can't convert Data.Modulated to Value"
 dataToValue (Int           i) = pure $ Combat.Data.Num i
 dataToValue (Part    f     p) = do
   result <- tryReduce f p
@@ -74,8 +75,10 @@ dataToValue (Part    f     p) = do
       throwError $ "Expected Nil or Cons, got " <> e'
 
 modulateData :: Data -> MIB [Bool]
-modulateData (Int i   ) = pure $ modulate i
-modulateData (Part p t)   = do
+modulateData (Modulated _  ) = throwError "Can't modulate Data.Modulated"
+modulateData (Pic       _  ) = throwError "Can't modulate Data.Pic"
+modulateData (Int       i  ) = pure $ modulate i
+modulateData (Part      p t)   = do
   p' <- tryReduce p t
   case p' of
     Part Nil []     ->  pure [False,False]
@@ -87,50 +90,57 @@ modulateData (Part p t)   = do
       e' <- showData e
       throwError $ "Expected Nil or Cons, got " <> e'
 
-runMIB :: MIB a -> Either String a
-runMIB = runIdentity . runExceptT . flip evalStateT (Map.empty, -1) . unMIB
+runMIB :: MIB a -> IO (Either String a)
+runMIB = runExceptT . flip evalStateT Map.empty . unMIB
 
 loadProg :: AlienProg -> MIB ()
 loadProg (AlienProg decls) = mapM_ loadDecl decls
 
 loadDecl :: AlienDecl -> MIB ()
-loadDecl (Decl ident expr) = modify $ first $ Map.insert ident expr
+loadDecl (Decl ident expr) = modify $  Map.insert ident expr
 
 addShared :: AlienExpr -> MIB AlienExpr
 addShared expr = do
-  index <- gets snd
-  modify $ second $ \_ ->  index - 1
-  let name = FuncName index
-  loadDecl (Decl name expr)
-  pure $ Ident name
+  var <- liftIO $ newMVar expr
+  pure $ Shared var
 
-updateIdent :: AlienName -> Data -> MIB ()
-updateIdent name dat = loadDecl (Decl name $ dataToExpr dat)
+runIdent :: AlienName -> MIB Data
+runIdent name =  do
+  expr <- runExpr =<< getIdent name
+  loadDecl (Decl name $ dataToExpr expr)
+  pure $ expr
+
+runShared :: MVar AlienExpr -> MIB Data
+runShared var = do
+  expr <- runExpr =<< (liftIO $ takeMVar var)
+  liftIO $ putMVar var (dataToExpr expr)
+  pure expr
 
 runExpr ::  AlienExpr -> MIB Data
 runExpr (App l r    ) = (uncurry tryReduce) =<< foldApp l [r]
 runExpr (Number i   ) = pure $ Int i
-runExpr (Ident  name) = do
-  res <- runExpr =<< getIdent name -- get and eval ident
-  updateIdent name res             -- store evaluated ident
-  pure res                         -- return result
+runExpr (Shared var ) = runShared var
+runExpr (Ident  name) = runIdent name
 runExpr (Func   name) = pure $ Part name []
 
 getIdent :: AlienName -> MIB AlienExpr
-getIdent name = gets (\env -> Map.findWithDefault (error $ "Unknown element " <> show name <> " in " <> show env) name $ fst env)
+getIdent name = gets (\env -> Map.findWithDefault (error $ "Unknown element " <> show name <> " in " <> show env) name env) -- TODO use throwError instead of error
 
 foldApp ::  AlienExpr -> [AlienExpr] -> MIB (AlienFunc, [AlienExpr])
 foldApp l rs  = case l of
     App nl r -> foldApp nl $ r:rs
     Number i -> throwError $ "Unexpected Number, tries to apply parameters: " <> show rs
+    Shared v -> do 
+        e <- runShared v
+        foldApp (dataToExpr e) rs
     Ident  n -> do
-        e <- getIdent n
-        foldApp e rs
+        e <- runIdent n
+        foldApp (dataToExpr e) rs
     Func   f -> pure (f, rs)
 
 continue ::  AlienExpr -> [AlienExpr] -> MIB Data
 continue x []               = runExpr x
-continue (Number i) l@(_:_) = error "Continue on number with non empty parameter list!"
+continue (Number i) l@(_:_) = throwError "Continue on number with non empty parameter list!"
 continue x t                = (uncurry tryReduce) =<< foldApp x t
 
 tryReduce ::  AlienFunc  -> [AlienExpr] -> MIB Data
@@ -206,8 +216,10 @@ tryReduce Draw [v] = do
   pure $ Pic lpi
 tryReduce Send (x:t) = do
   dat <- modulateToString =<< runExpr x
-  let Right res = unsafePerformIO $ postAlien (Connection server 0 (Just apiKey)) dat
-  let res' = demodulateData $ fromJust $ stringToBits res
+  response <- liftIO $ postAlien (Connection server 0 (Just apiKey)) dat
+  let
+    Right res = response
+    res' = demodulateData $ fromJust $ stringToBits res
   continue res' t
 tryReduce F38 (x2:x0:t) = tryReduce IF0
             (  app Car [x0]

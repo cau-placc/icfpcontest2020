@@ -42,6 +42,7 @@ executables:
     - -O2
     - -rtsopts
     - -with-rtsopts=-N
+    - -fwarn-incomplete-patterns
     # Here you can add dependencies specific to your binary, including your
     # own libarary.
     # dependencies:
@@ -50,6 +51,8 @@ executables:
 tests:
   test:
     main: Test.hs
+    ghc-options:
+      - -fwarn-incomplete-patterns
     source-dirs:
       - app
       - test

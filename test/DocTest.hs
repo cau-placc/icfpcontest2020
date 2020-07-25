@@ -331,7 +331,8 @@ runTests :: Integer -> [MIB TestResult] -> IO ()
 runTests docIndex tests = do
   let tests' = zip [1..] tests
   forM_ tests' $ \(index, test) -> do
-      case runMIB test of
+      testResult <- runMIB test
+      case testResult of
           Right (Right Nothing ) -> putStrLn $ "Test " <> show index <> " for Doc #"<> show docIndex <> " succeeded!"
           Right (Right (Just r)) -> putStrLn $ "Test " <> show index <> " for Doc #"<> show docIndex <> " failed, got unexpected:" <> show r
           Right (Left  e       ) -> putStrLn $ "Test " <> show index <> " for Doc #"<> show docIndex <> " had an internal error:\n" <> show e

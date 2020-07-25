@@ -57,11 +57,11 @@ data InteractState = InteractState {value :: Value, prog :: MIB ()}
 stepGalaxy :: InteractState -> (Integer, Integer) -> IO (InteractState, [Img])
 stepGalaxy p@InteractState{value = state, prog = prog} (x,y) = do
   let point = app Cons [Number x, Number y]
-      Right (newState, imgs) = runMIB $ prog >> do
-          result <- runExpr $ app Interact [Ident Galaxy, fromJust $ fromValue state, point]
-          state' <- dataToValue =<< extractState result
-          imgs   <- extractPics result
-          pure (state', imgs)
+  Right (newState, imgs) <- runMIB $ prog >> do
+    result <- runExpr $ app Interact [Ident Galaxy, fromJust $ fromValue state, point]
+    state' <- dataToValue =<< extractState result
+    imgs   <- extractPics result
+    pure (state', imgs)
   pure (InteractState{value = newState, prog = prog}, imgs)
 
 -- Takes the result of evaluating interact and extracts the state part
@@ -95,8 +95,8 @@ runGalaxy = do
   let Right prog2 = either (error . show) Right $ parseAlienProg "galaxy = ap ap s ap ap b s ap ap c ap ap b c ap ap b ap c ap c ap ap s ap ap b s ap ap b ap b ap ap s i i lt eq ap ap s mul i nil ap ap s ap ap b s ap ap b ap b cons ap ap s ap ap b s ap ap b ap b cons ap c div ap c ap ap s ap ap b b ap ap c ap ap b b add neg ap ap b ap s mul div ap ap c ap ap b b galaxy ap ap c add 2"
       result2 = loadProg prog2 >> runExpr (app Draw [app I [Ident Galaxy, Number  7, Number 0]])
       result3 = loadProg prog2 >> runExpr (app Draw [app I  [Ident Galaxy, Number 13, Number 0]])
-  showPics $ fromRight undefined $ runMIB $ extractPics =<<result2
-  showPics $ fromRight undefined $ runMIB $ extractPics =<<result3
+  showPics =<< (pure . fromRight undefined) =<< (runMIB $ extractPics =<<result2)
+  showPics =<< (pure . fromRight undefined) =<< (runMIB $ extractPics =<<result3)
 
   putStrLn "\nParsing Galaxy:"
   galaxy <- readFile galaxyFile
@@ -112,7 +112,7 @@ runGalaxy = do
   if False then do -- skipping initial sequence as generating the last image takes "forever"
     let
       initState = InteractState{value = Combat.Data.Nil, prog = loadProg prog}
-    result <- runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10){-, (0,0)-}]
+    result <- runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10), (0,0)]
     putStrLn "Starting from the begining, this will take some time ..."
     displayOutputs $ snd result
   else
@@ -121,7 +121,7 @@ runGalaxy = do
   let
     -- start at [2, [1, -1], 0, nil]
     state = toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
-    continue = [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0),(0,0)]
+    continue = [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (18,0)]
     -- start at [5, [2, 0, nil, nil, nil, nil, nil, 0], 8, nil]
     -- state = toValue [toValue (5::Integer), toValue [toValue (2::Integer),toValue (0::Integer), Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, toValue (0::Integer)], toValue (8::Integer), Combat.Data.Nil]
     -- continue = [(18,0)]
