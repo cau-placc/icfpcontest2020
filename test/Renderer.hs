@@ -43,7 +43,7 @@ renderDataAsImage pxss = Just $ generateImage renderer width height
         maxCount        = maximum $ fmap (\x -> Prelude.length $ Prelude.filter (x==) pxs'') $ nub pxs''
         renderer x y    = let pos = (x `div` scale, y `div` scale)
                               isWhite = elem pos pxs''
-                              isOrigin = pos == (0,0)
+                              isOrigin = pos == (-minX,-minY)
                               count = Prelude.length $ Prelude.filter (pos==) pxs''
                               c = (fromIntegral $  count * 255 `div` maxCount)
                               color = case (isWhite, isOrigin) of
