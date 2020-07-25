@@ -18,8 +18,9 @@ Send is
 - [Submission pre-Test System](https://github.com/Skgland/icfp2020-submission-system)
 
 
-# TODO
-- [ ] Implement Send Function (Interpreter.sh)
+# TODO (Post Content)
+- [x] Implement Send Function (Interpreter.sh)
+    - Fix `unsafePerformIO`
 - [ ] Move everything but Main, Test and Renderer to a library in a lib dir 
     - Renderer can't be part of the library as it uses dependencies not available in the Container during build
       as such it can stay with Test

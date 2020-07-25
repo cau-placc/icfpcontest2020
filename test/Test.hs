@@ -13,6 +13,7 @@ import           Combat.Data
 import           AlienNetwork
 
 import DocTest
+import AlienApi
 
 main :: IO ()
 main = do
@@ -22,8 +23,6 @@ main = do
 
 runGame :: IO ()
 runGame = do
-    let apiKey = "e5a6755f75374b6fbb621ae3d46e6f36"
-        server = "https://icfpc2020-api.testkontur.ru"
     (attack, defence) <- create server apiKey
     forkIO $ do
         Combat.init attack
@@ -106,10 +105,21 @@ runGalaxy = do
     putStrLn "[Warning] Expected Equality"
 
   putStrLn "\nRunning Galaxy:"
+
+  if False then do -- skipping initial sequence as generating the last image takes "forever"
+    let
+      initState = InteractState{value = alienList []}
+      result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10), (0,0)]
+    putStrLn "Starting from the begining, this will take some time ..."
+    displayOutputs $ (pure . snd) =<<result
+  else
+    pure ()
+
   let
-    initState = InteractState{value = alienList []}
-    --
-    result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10), (0,0)]
+    -- start at [2, [1, -1], 0, nil]
+    state = fromJust $ fromValue $ toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
+    initState = InteractState{value = state}
+    result = loadProg prog >> runGalaxy' initState  [(0,0)]
   displayOutputs $ (pure . snd) =<<result
 
   -- used for exploring next input

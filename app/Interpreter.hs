@@ -7,11 +7,15 @@ import           Control.Monad.State
 import           Control.Monad.Except
 import qualified Data.Map                      as Map
 import           Data.Map                       ( Map )
+import           Data.Maybe (fromJust)
 import           Data.Functor
 import           Data.Bifunctor (first, second)
 import           Text.Show.Functions
+import           System.IO.Unsafe (unsafePerformIO)
 
 import           Syntax
+import           Combat
+import           AlienApi
 import           Data.Functor.Identity          ( Identity
                                                 , runIdentity
                                                 )
@@ -200,7 +204,11 @@ tryReduce Draw [v] = do
   lp <- mapM asPair l
   lpi <- mapM (\(f, s) -> (,) <$> asInt f <*> asInt s) lp
   pure $ Pic lpi
-tryReduce Send (x:t) = error $ "Send is unimplemented, tried to send " <> show x
+tryReduce Send (x:t) = do
+  dat <- modulateToString =<< runExpr x
+  let Right res = unsafePerformIO $ postAlien (Connection server 0 (Just apiKey)) dat
+  let res' = demodulateData $ fromJust $ stringToBits res
+  continue res' t
 tryReduce F38 (x2:x0:t) = tryReduce IF0
             (  app Car [x0]
             : toExprList [app Modem [app Car [app Cdr [x0]]], app MultipleDraw [app Car [app Cdr [app Cdr [x0]]]]]
