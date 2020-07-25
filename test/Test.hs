@@ -120,21 +120,21 @@ runGalaxy = do
 
   let
     -- start at [2, [1, -1], 0, nil]
-    state = toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
-    continue = [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (18,0)]
+    -- state = toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
+    -- continue = [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (18,0)]
     -- start at [5, [2, 0, nil, nil, nil, nil, nil, 0], 8, nil]
-    -- state = toValue [toValue (5::Integer), toValue [toValue (2::Integer),toValue (0::Integer), Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, toValue (0::Integer)], toValue (8::Integer), Combat.Data.Nil]
-    -- continue = [(18,0)]
+    state = toValue [toValue (5::Integer), toValue [toValue (2::Integer),toValue (0::Integer), Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, toValue (0::Integer)], toValue (8::Integer), Combat.Data.Nil]
+    continue = [(-18,0)]
     initState = InteractState{value = state, prog = loadProg prog}
   result <- runGalaxy' initState continue
   displayOutputs $ snd result
 
   -- used for exploring next input
-  if False then do
+  if True then do
     putStrLn "Trying to find next Input!"
-    forM_ [(i,j)| i <- [-16..16] , j <- [-16..16]] $ \x -> do
+    forM_ [(-18,0), (-36,0), (-54,0), (-72,0), (-90,0), (-108,0), (72, 0)] $ \x -> do
         putStrLn $ "Trying next " <> show x
-        let startState = InteractState{value = fromJust $ fromValue $ toValue [toValue (1::Integer),toValue [(11::Integer)], toValue (0::Integer), Combat.Data.Nil], prog = loadProg prog}
+        let startState = InteractState{value = state, prog = loadProg prog}
         result <- runGalaxy' startState  [x]
         displayOutputs $ snd result
   else
