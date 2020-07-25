@@ -39,7 +39,7 @@ renderDataAsImage pxss = Just $ generateImage renderer width height
         (minX, minY)    = mapPair minimum $ unzip ((0,0):pxs')
         pxs''           = (\(x, y) -> (x - minX, y - minY)) <$> pxs'
         scale           = 10
-        (width, height) = mapPair (* scale) $ mapPair (+ 1) $ mapPair maximum $ unzip pxs''
+        (width, height) = mapPair (* scale) $ mapPair (+ 1) $ mapPair maximum $ unzip ((-minX,-minY):pxs'')
         maxCount        = maximum $ fmap (\x -> Prelude.length $ Prelude.filter (x==) pxs'') $ nub pxs''
         renderer x y    = let pos = (x `div` scale, y `div` scale)
                               isWhite = elem pos pxs''

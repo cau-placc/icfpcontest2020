@@ -119,7 +119,7 @@ runGalaxy = do
     -- start at [2, [1, -1], 0, nil]
     state = fromJust $ fromValue $ toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
     initState = InteractState{value = state}
-    result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0)]
+    result = loadProg prog >> runGalaxy' initState  [(0,0), (0,0), (0,0)]
   displayOutputs $ (pure . snd) =<<result
 
   -- used for exploring next input
