@@ -60,7 +60,7 @@ dataToExpr (Modulated s) = let
     Just bits = stringToBits s
   in
     app Mod [demodulateData bits]
-dataToExpr (Pic       pixel) = app Draw [{-- TODO Add pixel here --}]
+dataToExpr (Pic       pixel) = app Draw [fromJust $ Combat.Data.fromValue $ Combat.Data.toValue pixel]
 
 dataToValue :: Data -> MIB Combat.Data.Value
 dataToValue (Int           i) = pure $ Combat.Data.Num i
