@@ -109,7 +109,7 @@ runGalaxy = do
 
   putStrLn "\nRunning Galaxy:"
 
-  if False then do -- skipping initial sequence as generating the last image takes "forever"
+  if True then do -- skipping initial sequence as generating the last image takes "forever"
     let
       initState = InteractState{value = Combat.Data.Nil, prog = loadProg prog}
     result <- runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10), (0,0)]
@@ -120,17 +120,18 @@ runGalaxy = do
 
   let
     -- start at [2, [1, -1], 0, nil]
-    -- state = toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
-    -- continue = [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (18,0)]
+    state = toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
+    continue = [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (-18,0)]
     -- start at [5, [2, 0, nil, nil, nil, nil, nil, 0], 8, nil]
-    state = toValue [toValue (5::Integer), toValue [toValue (2::Integer),toValue (0::Integer), Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, toValue (0::Integer)], toValue (8::Integer), Combat.Data.Nil]
-    continue = [(-18,0)]
+    -- state = toValue [toValue (5::Integer), toValue [toValue (2::Integer),toValue (0::Integer), Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, toValue (0::Integer)], toValue (8::Integer), Combat.Data.Nil]
+    -- continue = [(-18,0)]
     initState = InteractState{value = state, prog = loadProg prog}
   result <- runGalaxy' initState continue
   displayOutputs $ snd result
 
   -- used for exploring next input
   if True then do
+    let state = toValue [toValue (5::Integer), toValue [toValue (2::Integer),toValue (0::Integer), Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, toValue (0::Integer)], toValue (8::Integer), Combat.Data.Nil]    
     putStrLn "Trying to find next Input!"
     forM_ [(-18,0), (-36,0), (-54,0), (-72,0), (-90,0), (-108,0), (72, 0)] $ \x -> do
         putStrLn $ "Trying next " <> show x
