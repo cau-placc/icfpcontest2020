@@ -1,4 +1,4 @@
-module Combat.Data where
+module Combat.Data (module Combat.Data) where
 
 import qualified Syntax
 import           Syntax (AlienExpr)
@@ -48,126 +48,133 @@ data GameState = GameState Tick Value [(ShipState, [ReceivedCommand])]          
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-
 class FromValue a where
-  fromValue :: Value -> Maybe a
+  fromValue :: Value -> a
 
-instance FromValue ShipState where
-  fromValue v | Just [role, id, position, velocity, x4, x5, x6, x7] <- fromValue v =
-      ShipState <$> fromValue role <*> fromValue id <*> fromValue position <*> fromValue velocity <*> fromValue x4 <*> fromValue x5 <*> fromValue x6 <*> fromValue x7
-  fromValue _ = Nothing
+class TryFromValue a where
+  tryFromValue :: Value -> Maybe a
+
+instance TryFromValue ShipState where
+  tryFromValue v | Just [role, ident, position, velocity, x4, x5, x6, x7] <- tryFromValue v =
+      ShipState <$> tryFromValue role <*> tryFromValue ident <*> tryFromValue position <*> tryFromValue velocity <*> tryFromValue x4 <*> tryFromValue x5 <*> tryFromValue x6 <*> tryFromValue x7
+  tryFromValue _ = Nothing
 
 
-instance FromValue ShipConfig where
-  fromValue v = do
-        [fuel, x2, x3, x4] <- fromValue v
+instance TryFromValue ShipConfig where
+  tryFromValue v = do
+        [fuel, x2, x3, x4] <- tryFromValue v
         pure ShipConfig{fuel = fuel, x2 = x2, x3 = x3, x4 = x4}
 
 
-instance FromValue GameState where
-  fromValue v | Just [tick, x3, commands] <- fromValue v =
-      GameState <$> fromValue tick <*> fromValue x3 <*> fromValue commands
-  fromValue _ = Nothing
+instance TryFromValue GameState where
+  tryFromValue v | Just [tick, x3, commands] <- tryFromValue v =
+      GameState <$> tryFromValue tick <*> tryFromValue x3 <*> tryFromValue commands
+  tryFromValue _ = Nothing
 
-instance FromValue Vector where
-  fromValue (Pair a b) = Vector <$> fromValue a <*> fromValue b
-  fromValue _          = Nothing
+instance TryFromValue Vector where
+  tryFromValue (Pair a b) = Vector <$> tryFromValue a <*> tryFromValue b
+  tryFromValue _          = Nothing
 
-instance FromValue Position where
-  fromValue v = Position <$> fromValue v
+instance TryFromValue Position where
+  tryFromValue v = Position <$> tryFromValue v
 
-instance FromValue ShipId where
-  fromValue v = ShipId <$> fromValue v
+instance TryFromValue ShipId where
+  tryFromValue v = ShipId <$> tryFromValue v
 
-instance FromValue Tick where
-  fromValue v = Tick <$> fromValue v
+instance TryFromValue Tick where
+  tryFromValue v = Tick <$> tryFromValue v
 
-instance FromValue Velocity where
-  fromValue v = Velocity <$> fromValue v
+instance TryFromValue Velocity where
+  tryFromValue v = Velocity <$> tryFromValue v
 
-instance FromValue Integer where
-  fromValue (Num i) = pure i
-  fromValue _       = Nothing
+instance TryFromValue Integer where
+  tryFromValue (Num i) = pure i
+  tryFromValue _       = Nothing
 
-instance FromValue GameResponse where
-  fromValue (Pair (Num 1) (Pair status (Pair unknown (Pair gameState Nil))) ) =
-      GameResponse <$> fromValue status <*> fromValue unknown <*> fromValue gameState
-  fromValue (Pair (Num 0) Nil) = pure InvalidRequest
-  fromValue _ = Nothing
+instance TryFromValue GameResponse where
+  tryFromValue (Pair (Num 1) (Pair status (Pair unknown (Pair gameState Nil))) ) =
+      GameResponse <$> tryFromValue status <*> tryFromValue unknown <*> tryFromValue gameState
+  tryFromValue (Pair (Num 0) Nil) = pure InvalidRequest
+  tryFromValue _ = Nothing
 
-instance FromValue Status where
-  fromValue (Num 0) = pure Waiting
-  fromValue (Num 1) = pure Running
-  fromValue (Num 2) = pure Done
-  fromValue _       = Nothing
+instance TryFromValue Status where
+  tryFromValue (Num 0) = pure Waiting
+  tryFromValue (Num 1) = pure Running
+  tryFromValue (Num 2) = pure Done
+  tryFromValue _       = Nothing
 
-instance FromValue Role where
-  fromValue (Num 0) = pure Attack
-  fromValue (Num 1) = pure Defence
-  fromValue _       = Nothing
+instance TryFromValue Role where
+  tryFromValue (Num 0) = pure Attack
+  tryFromValue (Num 1) = pure Defence
+  tryFromValue _       = Nothing
 
-instance FromValue Unknown where
-  fromValue v | Just [u1, position, u3, u4, u5] <- fromValue v =
-      Unknown <$> fromValue u1 <*> fromValue position <*> fromValue u3 <*> fromValue u4 <*> fromValue u5
-  fromValue _      = Nothing
+instance TryFromValue Unknown where
+  tryFromValue v | Just [u1, position, u3, u4, u5] <- tryFromValue v =
+      Unknown <$> tryFromValue u1 <*> tryFromValue position <*> tryFromValue u3 <*> tryFromValue u4 <*> tryFromValue u5
+  tryFromValue _      = Nothing
 
-instance (FromValue a) => FromValue [a] where
-  fromValue Nil         = pure []
-  fromValue (Pair h t)  = (:) <$> fromValue h <*> fromValue t
-  fromValue _           = Nothing
+instance (TryFromValue a) => TryFromValue [a] where
+  tryFromValue Nil         = pure []
+  tryFromValue (Pair h t)  = (:) <$> tryFromValue h <*> tryFromValue t
+  tryFromValue _           = Nothing
 
-instance (FromValue a, FromValue b) => FromValue (a,b) where
-  fromValue v | Just [a,b] <- fromValue v = (,) <$> fromValue a <*> fromValue b
-  fromValue _ = Nothing
+instance (TryFromValue a, TryFromValue b) => TryFromValue (a,b) where
+  tryFromValue v | Just [a,b] <- tryFromValue v = (,) <$> tryFromValue a <*> tryFromValue b
+  tryFromValue _ = Nothing
 
-instance (FromValue a, FromValue b, FromValue c) => FromValue (a,b,c) where
-  fromValue v | Just [a,b,c] <- fromValue v = (,,) <$> fromValue a <*> fromValue b <*> fromValue c
-  fromValue _ = Nothing
+instance (TryFromValue a, TryFromValue b, TryFromValue c) => TryFromValue (a,b,c) where
+  tryFromValue v | Just [a,b,c] <- tryFromValue v = (,,) <$> tryFromValue a <*> tryFromValue b <*> tryFromValue c
+  tryFromValue _ = Nothing
 
-instance (FromValue a, FromValue b, FromValue c, FromValue d) => FromValue (a,b,c,d) where
-  fromValue v | Just [a,b,c,d] <- fromValue v = (,,,) <$> fromValue a <*> fromValue b <*> fromValue c <*> fromValue d
-  fromValue _ = Nothing
+instance (TryFromValue a, TryFromValue b, TryFromValue c, TryFromValue d) => TryFromValue (a,b,c,d) where
+  tryFromValue v | Just [a,b,c,d] <- tryFromValue v = (,,,) <$> tryFromValue a <*> tryFromValue b <*> tryFromValue c <*> tryFromValue d
+  tryFromValue _ = Nothing
 
-instance FromValue SendCommand where
-  fromValue v = do
-    list <- fromValue v
+instance TryFromValue SendCommand where
+  tryFromValue v = do
+    list <- tryFromValue v
     case list of
-      [Num 0, vector    ] -> Accelerate (ShipId (-1)) <$> fromValue vector
+      [Num 0, vector    ] -> Accelerate (ShipId (-1)) <$> tryFromValue vector
       [Num 1            ] -> pure $ Detonate $ ShipId (-1)
-      [Num 2, target, x3] -> Shoot (ShipId (-1)) <$> fromValue target <*> fromValue x3
+      [Num 2, target, x3] -> Shoot (ShipId (-1)) <$> tryFromValue target <*> tryFromValue x3
       _                   -> Nothing
 
 
-instance FromValue ReceivedCommand where
-  fromValue v = do
-      list <- fromValue v
+instance TryFromValue ReceivedCommand where
+  tryFromValue v = do
+      list <- tryFromValue v
       case list of
-          [Num 0, vector            ] -> Accelerated <$> fromValue vector
-          [Num 2, target, x1, x2, x3] -> Fired <$> fromValue target <*> fromValue x1 <*> fromValue x2 <*> fromValue x3
+          [Num 0, vector            ] -> Accelerated <$> tryFromValue vector
+          [Num 2, target, x1, x2, x3] -> Fired <$> tryFromValue target <*> tryFromValue x1 <*> tryFromValue x2 <*> tryFromValue x3
           _                           -> pure $ Other v
 
-instance (FromValue a) => FromValue (Maybe a) where
-  fromValue v = pure $ fromValue v
+instance (TryFromValue a) => TryFromValue (Maybe a) where
+  tryFromValue v = pure $ tryFromValue v
 
 instance FromValue Value where
-  fromValue = pure
-
+  fromValue = id 
 
 instance FromValue AlienExpr where
-  fromValue (Num i)     = pure $ Syntax.Number i
-  fromValue Nil         = pure $ Syntax.Func Syntax.Nil
-  fromValue (Pair x y)  = do
-    x' <- fromValue x
-    y' <- fromValue y
-    pure $ app Syntax.Cons [x', y']
+  fromValue (Num i)     = Syntax.Number i
+  fromValue Nil         = Syntax.Func Syntax.Nil
+  fromValue (Pair x y)  = app Syntax.Cons [fromValue x, fromValue y]
 
 instance FromValue Data where
-  fromValue (Num i)     = pure $ Int i
-  fromValue Nil         = pure $ Part Syntax.Nil []
-  fromValue (Pair x y)  = do
-    x' <- fromValue x
-    y' <- fromValue y
-    pure $ Part Syntax.Cons [x',y']
+  fromValue (Num i)     = Int i
+  fromValue Nil         = Part Syntax.Nil []
+  fromValue (Pair x y)  = Part Syntax.Cons [fromValue x, fromValue y]
+
+instance TryFromValue Value where
+  tryFromValue = pure . fromValue
+
+instance TryFromValue AlienExpr where
+  tryFromValue = pure . fromValue
+
+instance TryFromValue Data where
+  tryFromValue = pure . fromValue
+
+instance TryFromValue a => FromValue (Maybe a) where
+  fromValue = tryFromValue
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------

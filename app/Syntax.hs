@@ -1,4 +1,4 @@
-module Syntax where
+module Syntax (module Syntax) where
 
 import           Control.Concurrent.MVar
 import           Data.Char                      ( toLower )

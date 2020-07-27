@@ -1,4 +1,4 @@
-module AlienNetwork where
+module AlienNetwork (postAlien, Connection(..), ResponseBody, StatusCode) where
 
 import Network.HTTP.Simple
 import qualified Data.ByteString.Lazy.UTF8 as BLU
@@ -6,33 +6,16 @@ import qualified Data.ByteString.Lazy.UTF8 as BLU
 type StatusCode = String
 type ResponseBody = String
 
-printRequestResult :: Either StatusCode ResponseBody -> IO ()
-printRequestResult requestResult = do
-  case requestResult of
-      Right body      -> putStrLn ("Server response: " ++ body)
-      Left statuscode -> putStrLn ("Unexpected server response:\nHTTP code: " ++ statuscode)
 
---------------------------------------------------------------------------------
---                              ENDPOINTS                                     --
---------------------------------------------------------------------------------
+data Connection = Connection String Integer (Maybe String)
 
-alienSend :: String -> String -> IO (Either StatusCode String)
-alienSend server body = post server "/aliens/send" body
-
-alienReceive :: String -> String -> IO (Either StatusCode String)
-alienReceive server responseId = get server ("/aliens/" ++ responseId) ""
-
--- TODO url encode key
-getLogs :: String -> String -> IO (Either StatusCode String)
-getLogs server key = get server ("/logs?logKey="++key) ""
-
---------------------------------------------------------------------------------
-
-post :: String -> String -> String -> IO (Either StatusCode ResponseBody)
-post s e b = send s e "POST" b
-
-get :: String -> String -> String -> IO (Either StatusCode ResponseBody)
-get s e b = send s e "GET" b
+postAlien :: Connection -> String -> IO (Either StatusCode ResponseBody)
+postAlien (Connection server _ maybeKey) body = let
+    querry = case maybeKey of
+        Nothing -> ""
+        Just k -> "?apiKey=" <> k
+  in
+    send server ("/aliens/send" <> querry) "POST" body
 
 send :: String -> String -> String -> String -> IO (Either StatusCode ResponseBody)
 send server endpoint method body = do

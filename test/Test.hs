@@ -1,9 +1,9 @@
 import           Control.Concurrent
-import           Control.Monad (void,forM,forM_)
+import           Control.Monad (void,forM_)
 import           Data.Either (fromRight)
 import           Data.Maybe (fromJust)
 
-import           Parser hiding (app)
+import           Parser (parseAlienProg)
 import           Renderer
 import           Syntax
 import           Interpreter
@@ -11,9 +11,10 @@ import           Interpreter.Data
 import           Combat
 import           Combat.Data
 import           AlienNetwork
+import           Modulation
 
-import DocTest
-import AlienApi
+import           DocTest
+import qualified AlienApi
 
 main :: IO ()
 main = do
@@ -23,42 +24,41 @@ main = do
 
 runGame :: IO ()
 runGame = do
-    (attack, defence) <- create server apiKey
-    forkIO $ do
+    (attack, defence) <- create AlienApi.server AlienApi.apiKey
+    void $ forkIO $ do
         Combat.init attack
     Combat.init defence
 
 create :: String -> String -> IO (Connection, Connection)
 create server apiKey = do
-    let createRequest = modulateValue $ toValue [1::Integer,0]
+    let createRequest = bitsToString $ modulateValue $ toValue [1::Integer,0]
     putStrLn $"Create Request: " <> createRequest
-    Right response <- post server ("/aliens/send?apiKey=" <> apiKey) createRequest
-    putStrLn $ show $ demodulateValue response
-    let Just (CreateResponse attack defence) = fromValue $ demodulateValue response
+    Right response <- postAlien (Connection server 0 $ Just apiKey) createRequest
+    let value = demodulateValue $ fromJust $ stringToBits response
+    putStrLn $ show $ value
+    let Just (CreateResponse attack defence) = tryFromValue value
     pure $ (Connection server attack $ Just apiKey, Connection server defence $ Just apiKey)
 
 data CreateResponse = CreateResponse Integer Integer
 
-instance FromValue CreateResponse where
-  fromValue v = do
-      (Num 1, [(Num 0, attackKey), (Num 1, defenceKey)]) <- fromValue v
+instance TryFromValue CreateResponse where
+  tryFromValue v = do
+      (Num 1, [(Num 0, attackKey), (Num 1, defenceKey)]) <- tryFromValue v
       pure $ CreateResponse attackKey defenceKey
 
+galaxyFile, statelessFile, statefulFile :: FilePath
 galaxyFile = "galaxy.txt"
 statelessFile = "stateless.txt"
 statefulFile = "stateful.txt"
-
-alienList [] = Part Syntax.Nil []
-alienList (h:t) = Part Cons [Number h, dataToExpr $ alienList t]
 
 data InteractState = InteractState {value :: Value, prog :: MIB ()}
 
 -- runs interact from a starting state one interaction point
 stepGalaxy :: InteractState -> (Integer, Integer) -> IO (InteractState, [Img])
-stepGalaxy p@InteractState{value = state, prog = prog} (x,y) = do
+stepGalaxy InteractState{value = state, prog = prog} (x,y) = do
   let point = app Cons [Number x, Number y]
   Right (newState, imgs) <- runMIB $ prog >> do
-    result <- runExpr $ app Interact [Ident Galaxy, fromJust $ fromValue state, point]
+    result <- runExpr $ app Interact [Ident Galaxy, fromValue state, point]
     state' <- dataToValue =<< extractState result
     imgs   <- extractPics result
     pure (state', imgs)
@@ -70,7 +70,7 @@ extractState (Part Cons [f,_]) = runExpr f
 extractState (Part f p) = do
   res <- tryReduce f p
   case res of
-    Part Cons [f,_] -> runExpr f
+    Part Cons [f',_] -> runExpr f'
     d               -> do
       r <- showData d
       return $ error $ "Expected a Part Cons [state,_], got " <> r
@@ -83,7 +83,7 @@ extractState d = do
 runGalaxy' :: InteractState -> [(Integer, Integer)] -> IO (InteractState, [(InteractState, [Img])])
 runGalaxy' p []    = pure (p,[])
 runGalaxy' p (h:t) = do
-  r@(p',d) <- stepGalaxy p h
+  r@(p', _) <- stepGalaxy p h
   (fp, rs) <- runGalaxy' p' t
   pure $ (fp, r : rs)
 
@@ -110,24 +110,11 @@ runGalaxy = do
   putStrLn "\nRunning Galaxy:"
 
   if True then do -- skipping initial sequence as generating the last image takes "forever"
-    let
-      initState = InteractState{value = Combat.Data.Nil, prog = loadProg prog}
-    result <- runGalaxy' initState  [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10), (0,0)]
-    putStrLn "Starting from the begining, this will take some time ..."
-    displayOutputs $ snd result
+    runInitializationSequence prog
   else
     pure ()
 
-  let
-    -- start at [2, [1, -1], 0, nil]
-    state = toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
-    continue = [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (-18,0)]
-    -- start at [5, [2, 0, nil, nil, nil, nil, nil, 0], 8, nil]
-    -- state = toValue [toValue (5::Integer), toValue [toValue (2::Integer),toValue (0::Integer), Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, Combat.Data.Nil, toValue (0::Integer)], toValue (8::Integer), Combat.Data.Nil]
-    -- continue = [(-18,0)]
-    initState = InteractState{value = state, prog = loadProg prog}
-  result <- runGalaxy' initState continue
-  displayOutputs $ snd result
+  runStartSequence prog
 
   -- used for exploring next input
   if True then do
@@ -142,12 +129,32 @@ runGalaxy = do
     pure ()
   putStrLn "Done"
 
+-- expects prog to be parsed galaxy.txt
+runInitializationSequence :: AlienProg -> IO ()
+runInitializationSequence prog = do
+  let
+    initState = InteractState{value = Combat.Data.Nil, prog = loadProg prog}
+    inputs = [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (8,4), (2,-8), (3,6), (0,-14), (-4,10), (9,-3), (-4,10), (0,0)] :: [(Integer,Integer)]
+  -- ends at [2, [1, -1], 0, nil]
+  result <- runGalaxy' initState inputs
+  putStrLn "Starting from the begining, this will take some time ..."
+  displayOutputs $ snd result
+
+-- expects prog to be parsed galaxy.txt
+runStartSequence :: AlienProg -> IO ()
+runStartSequence prog = do
+  let
+    -- start at [2, [1, -1], 0, nil]
+    state = toValue [toValue (2::Integer), toValue [1::Integer,-1], toValue (0::Integer), Combat.Data.Nil]
+    continue = [(0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0), (0,0)] :: [(Integer,Integer)]
+    -- ends at [5, [2, 0, nil, nil, nil, nil, nil, 0], 8, nil]
+    initState = InteractState{value = state, prog = loadProg prog}
+  result <- runGalaxy' initState continue
+  displayOutputs $ snd result
+
+
 displayOutputs :: [(InteractState ,[Img])] -> IO ()
 displayOutputs results = void $ mapM displayOutput results
-
-showResult :: Data -> MIB String
--- showResult dat = (showData =<< runExpr (app Car [dataToExpr dat]))
-showResult dat = show <$> (dataToValue =<< runExpr (app Car [dataToExpr dat]))
 
 displayOutput :: (InteractState, [Img]) -> IO ()
 displayOutput (InteractState{value = state}, pics) = do

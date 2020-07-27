@@ -1,30 +1,21 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, LambdaCase, TupleSections #-}
 
-module Interpreter where
+module Interpreter (runMIB, runExpr, tryReduce, loadProg, showData, dataToValue) where
 
-import           Control.Applicative
 import           Control.Monad.State
 import           Control.Monad.Except
 import           Control.Concurrent.MVar
 import qualified Data.Map                      as Map
-import           Data.Map                       ( Map )
 import           Data.Maybe (fromJust)
-import           Data.Functor
-import           Text.Show.Functions
 
 import           Syntax
 import           Combat
 import           AlienApi
-import           Data.Functor.Identity          ( Identity
-                                                , runIdentity
-                                                )
-
+import           AlienNetwork (postAlien, Connection(..))
 
 import Modulation
 import Interpreter.Data
 import qualified Combat.Data
-
-(.:) = (.) . (.)
 
 showData :: Data -> MIB String
 showData = \case
@@ -39,9 +30,9 @@ showData = \case
         l <- showData =<< runExpr x
         r <- showData =<< runExpr y
         pure $ "(" <> l <> ", " <> r <> ")"
-      Part f p    -> do
-        let l = fmap show p
-        pure $ "ap " <> show f <> foldl (\a b -> a ++ ' ':b ) "" l
+      Part f' p'    -> do
+        let l = fmap show p'
+        pure $ "ap " <> show f' <> foldl (\a b -> a ++ ' ':b ) "" l
       o       -> showData o
 
 modulateToString :: Data -> MIB String
@@ -50,7 +41,7 @@ modulateToString dat = bitsToString <$> modulateData dat
 stringDemodulate :: String -> MIB Data
 stringDemodulate input = case stringToBits input of
   Nothing -> throwError $ "Demodulation Error: " <> input
-  Just bits ->  runExpr $ demodulateData bits
+  Just bits ->  runExpr $ Combat.Data.fromValue $ demodulateValue bits
 
 dataToExpr :: Data -> AlienExpr
 dataToExpr (Int       i) = Number i
@@ -58,8 +49,8 @@ dataToExpr (Part f    p) = app f p
 dataToExpr (Modulated s) = let
     Just bits = stringToBits s
   in
-    app Mod [demodulateData bits]
-dataToExpr (Pic       pixel) = app Draw [fromJust $ Combat.Data.fromValue $ Combat.Data.toValue pixel]
+    app Mod [Combat.Data.fromValue $ demodulateValue bits]
+dataToExpr (Pic       pixel) = app Draw [Combat.Data.fromValue $ Combat.Data.toValue pixel]
 
 dataToValue :: Data -> MIB Combat.Data.Value
 dataToValue (Pic        _) = throwError "Can't convert Data.Pic to Value"
@@ -77,10 +68,10 @@ dataToValue (Part    f     p) = do
 modulateData :: Data -> MIB [Bool]
 modulateData (Modulated _  ) = throwError "Can't modulate Data.Modulated"
 modulateData (Pic       _  ) = throwError "Can't modulate Data.Pic"
-modulateData (Int       i  ) = pure $ modulate i
-modulateData (Part      p t)   = do
-  p' <- tryReduce p t
-  case p' of
+modulateData (Int       i  ) = pure $modulateValue $ Combat.Data.Num i
+modulateData (Part      f p) = do
+  f' <- tryReduce f p
+  case f' of
     Part Nil []     ->  pure [False,False]
     Part Cons [x,y] -> do
       h <- modulateData =<< runExpr x
@@ -129,7 +120,7 @@ getIdent name = gets (\env -> Map.findWithDefault (error $ "Unknown element " <>
 foldApp ::  AlienExpr -> [AlienExpr] -> MIB (AlienFunc, [AlienExpr])
 foldApp l rs  = case l of
     App nl r -> foldApp nl $ r:rs
-    Number i -> throwError $ "Unexpected Number, tries to apply parameters: " <> show rs
+    Number _ -> throwError $ "Unexpected Number, tries to apply parameters: " <> show rs
     Shared v -> do 
         e <- runShared v
         foldApp (dataToExpr e) rs
@@ -139,12 +130,12 @@ foldApp l rs  = case l of
     Func   f -> pure (f, rs)
 
 continue ::  AlienExpr -> [AlienExpr] -> MIB Data
-continue x []               = runExpr x
-continue (Number i) l@(_:_) = throwError "Continue on number with non empty parameter list!"
-continue x t                = (uncurry tryReduce) =<< foldApp x t
+continue x          []    = runExpr x
+continue (Number _) (_:_) = throwError "Continue on number with non empty parameter list!"
+continue x          t     = (uncurry tryReduce) =<< foldApp x t
 
 tryReduce ::  AlienFunc  -> [AlienExpr] -> MIB Data
-tryReduce Nil  (x:t)          = tryReduce T t
+tryReduce Nil  (_:t)          = tryReduce T t
 tryReduce Neg  [x]            = Int . negate <$> (runExpr >=> asInt) x
 tryReduce Cons (x: y: z: t)   = continue z (x:y:t)
 --tryReduce K (x:y:t)           = continue x t -- See T
@@ -219,7 +210,7 @@ tryReduce Send (x:t) = do
   response <- liftIO $ postAlien (Connection server 0 (Just apiKey)) dat
   let
     Right res = response
-    res' = demodulateData $ fromJust $ stringToBits res
+    res' = Combat.Data.fromValue $ demodulateValue $ fromJust $ stringToBits res
   continue res' t
 tryReduce F38 (x2:x0:t) = tryReduce IF0
             (  app Car [x0]

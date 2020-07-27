@@ -1,6 +1,6 @@
-module DocTest where
+module DocTest (runDocTests) where
 
-import           Control.Monad (void,forM,forM_)
+import           Control.Monad (forM_)
 
 import           Syntax
 import           Interpreter
@@ -43,6 +43,7 @@ runDocTests = do
   -- Doc 33 is Checkerboard and Contains no testable examples
   testDocs34
   testDocs35
+  -- TODO write tests or reason for no test for remaining doc chapters
   
   
 -------------------------------------------------------------------------------
@@ -326,10 +327,11 @@ testDocsXX = do
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
+-- TODO move Test Utility functions to separate module
 
 runTests :: Integer -> [MIB TestResult] -> IO ()
 runTests docIndex tests = do
-  let tests' = zip [1..] tests
+  let tests' = zip [(1::Integer)..] tests
   forM_ tests' $ \(index, test) -> do
       testResult <- runMIB test
       case testResult of
@@ -337,7 +339,6 @@ runTests docIndex tests = do
           Right (Right (Just r)) -> putStrLn $ "Test " <> show index <> " for Doc #"<> show docIndex <> " failed, got unexpected:" <> show r
           Right (Left  e       ) -> putStrLn $ "Test " <> show index <> " for Doc #"<> show docIndex <> " had an internal error:\n" <> show e
           Left  e                -> putStrLn $ "Test " <> show index <> " for Doc #"<> show docIndex <> " errored:\n" <> show e
-
 
 type TestResult = Either Data (Maybe Data)
 

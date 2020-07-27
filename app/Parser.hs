@@ -1,4 +1,4 @@
-module Parser where
+module Parser (parseAlienProg) where
 
 import           Control.Applicative            ( Alternative(some) )
 

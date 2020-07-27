@@ -1,9 +1,8 @@
-module Modulation where
+module Modulation (bitsToString, stringToBits, modulateValue, demodulateValue) where
 
+ import           Prelude hiding (rem)
  import           Debug.Trace
-
- import           Interpreter.Data
- import           Syntax
+ import           Combat.Data
 
  bitsToString :: [Bool] -> String
  bitsToString []        = []
@@ -19,6 +18,26 @@ module Modulation where
     t' <- stringToBits t
     pure $ True : t'
  stringToBits _         = Nothing
+
+ modulateValue :: Value -> [Bool]
+ modulateValue Combat.Data.Nil  = [False, False]
+ modulateValue (Pair f s)       = [True , True ] ++ modulateValue f ++ modulateValue s
+ modulateValue (Num i)          = modulate i
+
+ demodulateValue :: [Bool] -> Value
+ demodulateValue bits = fst $ demodulateV bits
+   where
+     demodulateV (False: False: res) = (Combat.Data.Nil, res)
+     demodulateV (True : True : res) = let
+         (l, res1) = demodulateV res
+         (r, res2) = demodulateV res1
+       in
+         (Pair l r, res2)
+     demodulateV number = let
+         i = demodulate number
+         res = drop (length $ modulate i) number
+       in
+         (Combat.Data.Num i, res)
 
  modulate :: Integer -> [Bool]
  modulate n =
@@ -41,32 +60,20 @@ module Modulation where
    go 0 r  = r
    go k rs = go (div k 2) (odd k : rs)
  
- demodulateData :: [Bool] -> AlienExpr
- demodulateData dat = case inner dat of
-  (res , []) -> res
-  (res, remainder) -> trace ("Remainder ("<>show remainder<>")during demoduation, this is likly an error!") res
-  where
-   inner (False : False : rem) = (Func Nil, rem)
-   inner (True : True : rem) =
-     let (l, rem1) = inner rem
-         (r, rem2) = inner rem1
-     in  (app Cons [l,r], rem2)
-   inner number =
-     let i   = demodulate number
-         rem = drop (length $ modulate i) number
-     in  (Number i, rem)
- 
  demodulate :: [Bool] -> Integer
  demodulate (s1 : s2 : bs) = sign s1 s2 * num
   where
-   width = length $ takeWhile id bs
-   rest  = take (4 * width) $ drop (width + 1) bs
-   num   = foldl (\n b -> 2 * n + if b then 1 else 0) 0 rest
+   width   = length $ takeWhile id bs
+   rest    = take (4 * width) $ drop (width + 1) bs
+   mayWarn = if length rest /= width * 4 then trace "Missing byted for Integer demodulation, this is likly an error!" else id
+   num     = mayWarn $ foldl (\n b -> 2 * n + if b then 1 else 0) 0 rest
+ demodulate _              = error "Require at least three bits for demodulation of Integers, got 0 or 1"
  
  sign :: Bool -> Bool -> Integer
  sign True  False = -1
  sign False True  = 1
- 
+ sign _     _     = error "Invalid Sign"
+
  testModulation :: [Bool]
  testModulation =
    map (\n -> n == demodulate (modulate n)) (concat [ [n, -n] | n <- [0 ..] ])

@@ -7,10 +7,9 @@ module Renderer ( extractPics
 
 import Codec.Picture
 import Control.Monad (join)
-import Data.List (maximumBy,nub)
-import Data.Ord (comparing)
+import Data.List (nub)
 import Data.ByteString.Lazy.Base64
-import Data.Text.Lazy hiding (minimum, maximum)
+import Data.Text.Lazy hiding (minimum, maximum, count)
 
 import Interpreter
 import Interpreter.Data
@@ -48,7 +47,7 @@ renderDataAsImage pxss = Just $ generateImage renderer width height
                               isWhite = elem pos pxs''
                               isOrigin = pos == (-minX,-minY)
                               count = Prelude.length $ Prelude.filter (pos==) pxs''
-                              c = (fromIntegral $  count * 255 `div` maxCount)
+                              c = (fromIntegral $  count * 255 `div` maxCount) :: Pixel8
                               color = case (isWhite, isOrigin) of
                                               (True , False) -> PixelRGB8 c   c c
                                               (False, True ) -> PixelRGB8 255 0 0
