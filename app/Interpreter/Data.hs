@@ -13,7 +13,7 @@ type MIBEnv = Map AlienName AlienExpr
 newtype MIB a = MIB { unMIB :: StateT MIBEnv (ExceptT String IO) a }
   deriving (Functor, Applicative, Monad, MonadState MIBEnv, MonadIO,  Alternative, MonadError String)
 
-data Data = Part AlienFunc [AlienExpr] | Int Integer | Pic [(Integer, Integer)] | Modulated String deriving (Show)
+data Data = Part AlienFunc [AlienExpr] | Int Integer | Pic [(Integer, Integer)] | Modulated [Bool] deriving (Show)
 
 
 app :: AlienFunc -> [AlienExpr] -> AlienExpr

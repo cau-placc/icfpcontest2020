@@ -9,7 +9,6 @@ import qualified Data.Map                      as Map
 import           Data.Maybe (fromJust)
 
 import           Syntax
-import           Combat
 import           AlienApi
 import           AlienNetwork (postAlien, Connection(..))
 
@@ -38,18 +37,16 @@ showData = \case
 modulateToString :: Data -> MIB String
 modulateToString dat = bitsToString <$> modulateData dat
 
-stringDemodulate :: String -> MIB Data
-stringDemodulate input = case stringToBits input of
-  Nothing -> throwError $ "Demodulation Error: " <> input
-  Just bits ->  runExpr $ Combat.Data.fromValue $ demodulateValue bits
+modulateToBits :: Data -> MIB [Bool]
+modulateToBits dat = modulateData dat
+
+demodulateBits :: [Bool] -> Data
+demodulateBits bits = Combat.Data.fromValue $ demodulateValue bits
 
 dataToExpr :: Data -> AlienExpr
-dataToExpr (Int       i) = Number i
-dataToExpr (Part f    p) = app f p
-dataToExpr (Modulated s) = let
-    Just bits = stringToBits s
-  in
-    app Mod [Combat.Data.fromValue $ demodulateValue bits]
+dataToExpr (Int       i    ) = Number i
+dataToExpr (Part f    p    ) = app f p
+dataToExpr (Modulated bits ) = app Mod  [Combat.Data.fromValue $ demodulateValue bits]
 dataToExpr (Pic       pixel) = app Draw [Combat.Data.fromValue $ Combat.Data.toValue pixel]
 
 dataToValue :: Data -> MIB Combat.Data.Value
@@ -195,10 +192,10 @@ tryReduce Modem (x0:t) = tryReduce Dem (app Mod [x0]:t)
 tryReduce MultipleDraw (x0:t) = tryReduce IsNil (x0: Func Nil: (app Cons [app Draw [app Car [x0]], app MultipleDraw [app Cdr [x0]]]) : t)
 tryReduce Dem [x] = do
   x' <- (runExpr >=> asModulated) x
-  stringDemodulate x'
+  pure $ demodulateBits x'
 tryReduce Mod [x] = do
   x' <- runExpr x
-  Modulated <$> modulateToString x'
+  Modulated <$> modulateToBits x'
 tryReduce Draw [v] = do
   e <- runExpr v
   l <- asList e
@@ -264,7 +261,7 @@ asList = \case
         e        -> throwError $ "expected unit or pair, got" <> show e
   e        -> throwError $ "expected unit or pair, got" <> show e
 
-asModulated :: Data -> MIB String
+asModulated :: Data -> MIB [Bool]
 asModulated = \case
   Modulated m -> pure m
   _           -> throwError "Expected Modulated Data"

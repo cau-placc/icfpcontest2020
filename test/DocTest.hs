@@ -5,6 +5,7 @@ import           Control.Monad (forM_)
 import           Syntax
 import           Interpreter
 import           Interpreter.Data
+import           Modulation (bitsToString)
 
 runDocTests :: IO ()
 runDocTests = do
@@ -363,7 +364,7 @@ testModulatedEq expr res = do
     modulated <- runExpr $ app Mod [expr]
     case modulated of
       Modulated modulated' ->
-        if modulated' == res then
+        if bitsToString modulated' == res then
             pure $ Right Nothing
         else
             pure $ Right $ Just modulated
