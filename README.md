@@ -47,14 +47,19 @@ on the empty state and with the vector (0,0).
       as such it can stay with `Test`
     - [x] Move It
     - [x] Change test in package.yaml to have source-dir lib instead of app, should remove warning about `Main` module workaround
-- [ ] Make galaxy evaluator into an interactive galaxy pad
-  - [ ] How does the galaxy protocol interact with the world, it does not use the `send` function?
-  - [ ] New executable that evaluates galaxy interaction (using evaluator) in a loop
+- [x] Make galaxy evaluator into an interactive galaxy pad
+  - [x] How does the galaxy protocol interact with the world, it does not use the `send` function?
+    - Yes, it does use `send`
+  - [x] New executable that evaluates galaxy interaction (using evaluator) in a loop
     1. Evaluate from initial input
     2. Display resulting picture, saving resulting state
     3. Wait for user input (`Vector`, `Coordinate`)
     4. Evaluate galaxy protocol from saved state with user input
     5. Continue with second step 
+  - How to use:
+    - in the package.yaml set buildable to true
+    - run `stack run :gui`
+    - Controls: `Left Arrow Key` to go back, `Escape Key` to Quit, `Mouse Click` to do a Step with the clicked Coordinate
 - [ ] Clean up code
 - [ ] Improve documentation
 - [ ] Improve and update Readme

@@ -50,6 +50,7 @@ executables:
     # dependencies:
     # - icfpc-mmxx-starterkit-haskell
   gui:
+    buildable: false
     main:                Main.hs
     source-dirs:         gui
     dependencies:

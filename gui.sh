@@ -1,1 +1,1 @@
-stack run :gui
+stack run gui
