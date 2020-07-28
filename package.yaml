@@ -20,13 +20,13 @@ name:                icfpc-mmxx-starterkit-haskell
 description:         Please see <https://github.com/icfpcontest2020/starterkit-haskell>
 
 dependencies:
-- base >= 4.7 && < 5
-- http-conduit >= 2.3
-- utf8-string >= 1.0
-- parsec
-- mtl
-- transformers
-- containers
+  - base >= 4.7 && < 5
+  - http-conduit >= 2.3
+  - utf8-string >= 1.0
+  - parsec
+  - mtl
+  - transformers
+  - containers
 
 # In a more realistic setting, you will probably want to write a library that
 # is declared here and use it as a dependency for your binary.
@@ -37,16 +37,24 @@ executables:
   main:
     main:                Main.hs
     source-dirs:         app
+    dependencies:
+      - icfpc-mmxx-starterkit-haskell
     ghc-options:
-    - -threaded
-    - -O2
-    - -rtsopts
-    - -with-rtsopts=-N
-    - -fwarn-incomplete-patterns
+      - -threaded
+      - -O2
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -fwarn-incomplete-patterns
     # Here you can add dependencies specific to your binary, including your
     # own libarary.
     # dependencies:
     # - icfpc-mmxx-starterkit-haskell
+
+library:
+    source-dirs:      lib
+    ghc-options:
+      - -O2
+      - -fwarn-incomplete-patterns
 
 tests:
   test:
@@ -54,9 +62,9 @@ tests:
     ghc-options:
       - -fwarn-incomplete-patterns
     source-dirs:
-      - app
       - test
     dependencies:
+      - icfpc-mmxx-starterkit-haskell
       - JuicyPixels >= 3.3 && < 4
       - base64
       - text

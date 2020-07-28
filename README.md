@@ -42,11 +42,11 @@ on the empty state and with the vector (0,0).
 
 # TODO
 - [x] Implement `send` function (Interpreter.sh)
-- [ ] Move everything but `Main`, `Test` and `Renderer` to a library in a lib dir 
+- [x] Move everything but `Main`, `Test`, `DocTest` and `Renderer` to a library in a lib dir 
     - Renderer can't be part of the library as it uses dependencies not available in the container during build,
       as such it can stay with `Test`
-    - [ ] Move It
-    - [ ] Change test in package.yaml to have source-dir lib instead of app, should remove warning about `Main` module workaround
+    - [x] Move It
+    - [x] Change test in package.yaml to have source-dir lib instead of app, should remove warning about `Main` module workaround
 - [ ] Make galaxy evaluator into an interactive galaxy pad
   - [ ] How does the galaxy protocol interact with the world, it does not use the `send` function?
   - [ ] New executable that evaluates galaxy interaction (using evaluator) in a loop
