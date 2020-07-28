@@ -2,8 +2,10 @@ module Main (main) where
 
 import           System.Exit
 import           Data.Maybe (fromMaybe)
+import           Data.IORef
 
 import           Graphics.Gloss.Interface.IO.Interact
+import           Graphics.Gloss.Interface.Environment
 
 import qualified AlienApi
 import           Combat.Data
@@ -14,10 +16,8 @@ import           Parser
 data State = State { state :: InteractState
                      , img :: [Img]
                      , history :: Maybe State
+                     , scaling :: IORef Float
                      }
-
-displayScale :: Float
-displayScale = 6
 
 main :: IO ()
 main = do
@@ -29,10 +29,29 @@ main = do
     -- display = InWindow "GalaxyPad" (1920,1080) (0,0) -- TODO fix offset problem in Window mode
     display = FullScreen
     color   = black
-  interactIO display color State{state = firstState, img = initialImage, history = Nothing} draw update callback
+  ref <- newIORef 1
+  interactIO display color State{state = firstState, img = initialImage, history = Nothing, scaling = ref} draw update callback
 
 draw :: State -> IO Picture
-draw State{img = images} = pure $ scale displayScale displayScale $ pictures $ imagesToPictures images
+draw State{img = images, scaling = ref} = do
+  displayScale <- imageScale images =<< getScreenSize -- TODO only works correctly in fullscreen
+  putStrLn $ "Calculated Scale " <> show displayScale
+  writeIORef ref displayScale
+  pure $ scale displayScale displayScale $ pictures $ imagesToPictures images
+
+
+imageScale :: [Img] -> (Int, Int) -> IO Float
+imageScale images (screenWidth, screenHeight) = let
+    (xs, ys)    = unzip $ concatMap (\(Img pixel) -> pixel) images
+    width       = 2 * (maximum $ map abs xs) :: Integer
+    height      = 2 * (maximum $ map abs ys) :: Integer
+    widthScale  = (toInteger screenWidth ) `div` (width  + 1)
+    heightScale = (toInteger screenHeight) `div` (height + 1)
+  in do
+    putStrLn $ "Image  Width: " <> show width       <> " Height: " <> show height
+    putStrLn $ "Screen Width: " <> show screenWidth <> " Height: " <> show screenHeight
+    putStrLn $ "Scale  Width: " <> show widthScale  <> " Height: " <> show heightScale
+    pure $ fromInteger $ minimum [widthScale, heightScale]
 
 imagesToPictures :: [Img] -> [Picture]
 imagesToPictures images = fmap (\(Img pixels) -> pictures $ fmap posToPicture pixels) images
@@ -58,21 +77,22 @@ update (EventKey    (MouseButton button) kState _modifier (x, y)) currentState =
         Down -> pure currentState -- TODO register down position and only act on up when same
         Up   -> do
             putStrLn $ "Click at " <> show (x,y)
+            drawScale <- readIORef $ scaling currentState
             let
-               x' = toActualCoord x
-               y' = toActualCoord (-y)
+               x' = toActualCoord drawScale x
+               y' = toActualCoord drawScale (-y)
             putStrLn "Generating next State/Frame"
             -- TODO indicate to the user that we are doing something, when this take a lot of time?
-            (newState, newImage) <- stepGalaxy (state currentState) (x', y')     
+            (newState, newImage) <- stepGalaxy (state currentState) (x', y')
             putStrLn "Done Generating State/Frame"
             pure currentState{state = newState, img = newImage, history = Just currentState}
 
-toActualCoord :: Float -> Integer
-toActualCoord c = let
-    offset = displayScale / 2
+toActualCoord :: Float -> Float -> Integer
+toActualCoord drawScale c = let
+    offset = drawScale / 2
     unOffset = c + offset
   in
-    floor $ unOffset / displayScale
+    floor $ unOffset / drawScale
 
 -- TODO
 callback :: Controller -> IO ()
