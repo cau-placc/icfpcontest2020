@@ -12,6 +12,7 @@ import           Combat
 import           Combat.Data
 import           AlienNetwork
 import           Modulation
+import           Executor
 
 import           DocTest
 import qualified AlienApi
@@ -46,37 +47,7 @@ instance TryFromValue CreateResponse where
       (Num 1, [(Num 0, attackKey), (Num 1, defenceKey)]) <- tryFromValue v
       pure $ CreateResponse attackKey defenceKey
 
-galaxyFile, statelessFile, statefulFile :: FilePath
-galaxyFile = "galaxy.txt"
-statelessFile = "stateless.txt"
-statefulFile = "stateful.txt"
 
-data InteractState = InteractState {value :: Value, prog :: MIB ()}
-
--- runs interact from a starting state one interaction point
-stepGalaxy :: InteractState -> (Integer, Integer) -> IO (InteractState, [Img])
-stepGalaxy InteractState{value = state, prog = prog} (x,y) = do
-  let point = app Cons [Number x, Number y]
-  Right (newState, imgs) <- runMIB $ prog >> do
-    result <- runExpr $ app Interact [Ident Galaxy, fromValue state, point]
-    state' <- dataToValue =<< extractState result
-    imgs   <- extractPics result
-    pure (state', imgs)
-  pure (InteractState{value = newState, prog = prog}, imgs)
-
--- Takes the result of evaluating interact and extracts the state part
-extractState :: Data -> MIB Data
-extractState (Part Cons [f,_]) = runExpr f
-extractState (Part f p) = do
-  res <- tryReduce f p
-  case res of
-    Part Cons [f',_] -> runExpr f'
-    d               -> do
-      r <- showData d
-      return $ error $ "Expected a Part Cons [state,_], got " <> r
-extractState d = do
-      r <- showData d
-      return $ error $ "Expected a Part Cons [state,_], got " <> r
 
 -- runs interact from a starting state for the sequence of interaction points
 -- returning the final state and all results
@@ -86,6 +57,8 @@ runGalaxy' p (h:t) = do
   r@(p', _) <- stepGalaxy p h
   (fp, rs) <- runGalaxy' p' t
   pure $ (fp, r : rs)
+
+
 
 runGalaxy :: IO ()
 runGalaxy = do
@@ -99,7 +72,7 @@ runGalaxy = do
   showPics =<< (pure . fromRight undefined) =<< (runMIB $ extractPics =<<result3)
 
   putStrLn "\nParsing Galaxy:"
-  galaxy <- readFile galaxyFile
+  galaxy <- readFile AlienApi.galaxyFile
   let Right prog  = either (error . show) Right $ parseAlienProg galaxy
 
   if show prog == (unlines $ lines galaxy) then

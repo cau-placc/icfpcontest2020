@@ -49,6 +49,18 @@ executables:
     # own libarary.
     # dependencies:
     # - icfpc-mmxx-starterkit-haskell
+  gui:
+    main:                Main.hs
+    source-dirs:         gui
+    dependencies:
+      - icfpc-mmxx-starterkit-haskell
+      - gloss # required libghc-openglraw-dev and libghc-glutraw-dev on linux-mint
+    ghc-options:
+      - -threaded
+      - -O2
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -fwarn-incomplete-patterns
 
 library:
     source-dirs:      lib

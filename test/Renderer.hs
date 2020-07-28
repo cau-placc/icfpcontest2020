@@ -6,25 +6,14 @@ module Renderer ( extractPics
                 ) where
 
 import Codec.Picture
-import Control.Monad (join)
 import Data.List (nub)
 import Data.ByteString.Lazy.Base64
 import Data.Text.Lazy hiding (minimum, maximum, count)
 
 import Interpreter
 import Interpreter.Data
+import Executor
 
-data Img = Img [(Integer, Integer)]
-
--- Extracts the pictures from the given data
-extractPics :: Data -> MIB [Img]
-extractPics (Pic pxs)  = pure $ [Img pxs]
-extractPics (Part f p) = do
-  res <- tryReduce f p
-  case res of
-    Part _ es -> join <$> (mapM extractPics =<< mapM runExpr es)
-    _         -> pure []
-extractPics _          = pure $ []
 
 -- Renders the given data to the provided file path as a PNG image.
 renderDataAsPngTo :: String -> [Img] -> IO ()

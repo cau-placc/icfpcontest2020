@@ -1,3 +1,3 @@
 #!/bin/sh
 
-stack install --allow-different-user
+stack install :main --allow-different-user
